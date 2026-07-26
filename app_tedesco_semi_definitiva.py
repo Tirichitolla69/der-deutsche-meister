@@ -46,50 +46,6 @@ st.markdown(
 
 
 # ---------------------------------------------------------------------------
-# Accesso: l'app resta bloccata finché non si inserisce la password corretta.
-# ---------------------------------------------------------------------------
-APP_PASSWORD = "lala31"
-
-
-def _rerun() -> None:
-    """Riavvia lo script subito dopo il login, compatibile con più versioni di Streamlit."""
-    if hasattr(st, "rerun"):
-        st.rerun()
-    else:  # pragma: no cover - fallback per versioni precedenti di Streamlit
-        st.experimental_rerun()
-
-
-def require_login() -> None:
-    """Mostra una schermata di accesso e ferma l'esecuzione finché la password non è corretta."""
-    if st.session_state.get("authenticated"):
-        return
-    st.markdown(
-        "<section class='hero'><h1>🇩🇪 Der Deutsche Meister</h1>"
-        "<p>Accesso riservato · inserisci la password per continuare</p></section>",
-        unsafe_allow_html=True,
-    )
-    _, mid, _ = st.columns([1, 1.3, 1])
-    with mid:
-        st.markdown(
-            "<div class='note'>🔒 Questa applicazione è protetta: inserisci la password per sbloccarla.</div>",
-            unsafe_allow_html=True,
-        )
-        with st.form("login_form"):
-            password = st.text_input("Password", type="password", label_visibility="visible")
-            submitted = st.form_submit_button("🔓 Sblocca", type="primary", use_container_width=True)
-        if submitted:
-            if password == APP_PASSWORD:
-                st.session_state["authenticated"] = True
-                _rerun()
-            else:
-                st.error("Password errata. Riprova.")
-    st.stop()
-
-
-require_login()
-
-
-# ---------------------------------------------------------------------------
 # Interfaccia localizzata. Il tedesco rimane sempre la lingua-obiettivo.
 # ---------------------------------------------------------------------------
 LANGUAGES = {"Italiano": "it", "Türkçe": "tr", "English": "en", "Español": "es"}
@@ -238,7 +194,7 @@ def speakable_grid(items: list[dict], language: str, columns: int = 4, detail_ke
         word = html.escape(word_with_plural(item))
         detail = html.escape(tr(item, language) if detail_key == "translation" else item.get(detail_key, item.get("it", "")))
         plural = plural_form(item)
-        speech_word = html.escape(json.dumps(item["de"] if not plural or plural == "—" else f"{item['de']}. {plural}"))
+        speech_word = json.dumps(item["de"] if not plural or plural == "—" else f"{item['de']}. {plural}")
         cells.append(
             f'<button class="term" onclick="say({speech_word}, this)" title="{html.escape(tx("pronunciation"))}">'
             f'<span class="de">{word} <b>🔊</b></span><span class="translation">{detail}</span></button>'
