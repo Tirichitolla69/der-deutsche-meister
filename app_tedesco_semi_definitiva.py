@@ -6,41 +6,12 @@ from __future__ import annotations
 
 import html
 import json
-import os
 import random
 from dataclasses import dataclass
 
 import streamlit as st
 import streamlit.components.v1 as components
 
-
-
-# ---------------------------------------------------------------------------
-# Rilevamento tema (light / dark) per CSS adattivo
-# ---------------------------------------------------------------------------
-try:
-    _theme_base = st.get_option("theme.base")
-except Exception:
-    _theme_base = "light"
-IS_DARK = _theme_base == "dark"
-
-# Palette adattiva
-C = {
-    "app_bg": "#0e1117" if IS_DARK else "#f6f8fc",
-    "text": "#fafafa" if IS_DARK else "#152033",
-    "card_bg": "#1e1e1e" if IS_DARK else "#ffffff",
-    "card_border": "#2d2d2d" if IS_DARK else "#e3e9f2",
-    "note_bg": "#1a2332" if IS_DARK else "#edf8ff",
-    "note_border": "#2a3a4a" if IS_DARK else "#cbe8f4",
-    "sidebar_bg": "#161616" if IS_DARK else "#ffffff",
-    "sidebar_border": "#2d2d2d" if IS_DARK else "#e3e9f2",
-    "source": "#a0a8b0" if IS_DARK else "#617186",
-    "translation": "#94a3b8" if IS_DARK else "#64748b",
-    "term_border": "#3a4a5a" if IS_DARK else "#dce7f0",
-    "term_hover_bg": "#1a2a3a" if IS_DARK else "#effbff",
-    "term_hover_border": "#0d7c9c",
-    "hero_grad": "linear-gradient(118deg,#0a1a2e,#0d4a6a 58%,#085e4e)" if IS_DARK else "linear-gradient(118deg,#112a46,#146c94 58%,#0b8e75)",
-}
 
 st.set_page_config(
     page_title="Der Deutsche Meister | A1–B2",
@@ -50,42 +21,24 @@ st.set_page_config(
 )
 
 st.markdown(
-    f"""
+    """
     <style>
-      .stApp {{ background: {C['app_bg']}; color: {C['text']}; }}
-      [data-testid="stSidebar"] {{ background: {C['sidebar_bg']}; border-right: 1px solid {C['sidebar_border']}; }}
-      .hero {{ padding: 1.6rem 1.8rem; border-radius: 18px; color: white;
-              background: {C['hero_grad']}; margin: .2rem 0 1.25rem; }}
-      .hero h1 {{ margin: 0; font-size: 2.05rem; }}
-      .hero p {{ margin: .35rem 0 0; opacity: .92; }}
-      .card {{ background: {C['card_bg']}; border: 1px solid {C['card_border']}; border-radius: 14px; padding: 1.05rem 1.2rem;
-              box-shadow: 0 2px 10px rgba(0,0,0,.08); margin: .65rem 0; color: {C['text']}; }}
-      .chapter {{ border-left: 5px solid #168aab; }}
-      .chapter h3 {{ margin: 0 0 .55rem; color: {C['text']}; }}
-      .chapter p {{ line-height: 1.62; margin: .25rem 0; }}
-      .level {{ display:inline-block; color:#fff; font-weight:750; padding:.2rem .7rem; border-radius:99px; margin-bottom:.55rem; }}
-      .A1{{background:#16835b}}.A2{{background:#2563b8}}.B1{{background:#b66308}}.B2{{background:#bd3535}}
-      .note {{ background:{C['note_bg']}; border-radius:10px; padding:.75rem 1rem; border:1px solid {C['note_border']}; color: {C['text']}; }}
-      .source {{ color:{C['source']}; font-size:.9rem; }}
-      .smallcaps {{ color:{C['source']}; text-transform:uppercase; letter-spacing:.06em; font-size:.75rem; font-weight:700; }}
-
-      /* Mobile optimisations */
-      @media (max-width: 768px) {{
-        .hero {{ padding: 1rem 1.1rem !important; border-radius: 12px; }}
-        .hero h1 {{ font-size: 1.45rem !important; }}
-        .hero p {{ font-size: 0.95rem; }}
-        .card {{ padding: 0.85rem 0.9rem !important; margin: 0.45rem 0 !important; border-radius: 10px; }}
-        .chapter h3 {{ font-size: 1.05rem; }}
-        .level {{ font-size: 0.8rem; padding: .15rem .55rem; }}
-        .note {{ padding: .6rem .8rem; }}
-      }}
-
-      /* Scrollbar dark mode */
-      @media (prefers-color-scheme: dark) {{
-        ::-webkit-scrollbar {{ width: 8px; height: 8px; }}
-        ::-webkit-scrollbar-track {{ background: #1e1e1e; }}
-        ::-webkit-scrollbar-thumb {{ background: #4a4a4a; border-radius: 4px; }}
-      }}
+      .stApp { background: #f6f8fc; color: #152033; }
+      [data-testid="stSidebar"] { background: #fff; border-right: 1px solid #e3e9f2; }
+      .hero { padding: 1.6rem 1.8rem; border-radius: 18px; color: white;
+              background: linear-gradient(118deg,#112a46,#146c94 58%,#0b8e75); margin: .2rem 0 1.25rem; }
+      .hero h1 { margin: 0; font-size: 2.05rem; }
+      .hero p { margin: .35rem 0 0; opacity: .92; }
+      .card { background: white; border: 1px solid #e3e9f2; border-radius: 14px; padding: 1.05rem 1.2rem;
+              box-shadow: 0 2px 10px rgba(24,44,74,.045); margin: .65rem 0; }
+      .chapter { border-left: 5px solid #168aab; }
+      .chapter h3 { margin: 0 0 .55rem; color: #12345a; }
+      .chapter p { line-height: 1.62; margin: .25rem 0; }
+      .level { display:inline-block; color:#fff; font-weight:750; padding:.2rem .7rem; border-radius:99px; margin-bottom:.55rem; }
+      .A1{background:#16835b}.A2{background:#2563b8}.B1{background:#b66308}.B2{background:#bd3535}
+      .note { background:#edf8ff; border-radius:10px; padding:.75rem 1rem; border:1px solid #cbe8f4; }
+      .source { color:#617186; font-size:.9rem; }
+      .smallcaps { color:#5c6c80; text-transform:uppercase; letter-spacing:.06em; font-size:.75rem; font-weight:700; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -95,7 +48,7 @@ st.markdown(
 # ---------------------------------------------------------------------------
 # Accesso: l'app resta bloccata finché non si inserisce la password corretta.
 # ---------------------------------------------------------------------------
-APP_PASSWORD = st.secrets.get("APP_PASSWORD", os.environ.get("APP_PASSWORD", "lala31"))
+APP_PASSWORD = "lala31"
 
 
 def _rerun() -> None:
@@ -115,21 +68,13 @@ def require_login() -> None:
         "<p>Accesso riservato · inserisci la password per continuare</p></section>",
         unsafe_allow_html=True,
     )
-    st.markdown(
-        f"""
-        <style>
-        .login-wrap {{ max-width: 460px; margin: 0 auto; padding: 0 10px; }}
-        @media (max-width: 480px) {{ .login-wrap {{ max-width: 100%; }} }}
-        </style>
-        <div class="login-wrap">
-        """,
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        f"<div class='note'>🔒 Questa applicazione è protetta: inserisci la password per sbloccarla.</div>",
-        unsafe_allow_html=True,
-    )
-    with st.form("login_form"):
+    _, mid, _ = st.columns([1, 1.3, 1])
+    with mid:
+        st.markdown(
+            "<div class='note'>🔒 Questa applicazione è protetta: inserisci la password per sbloccarla.</div>",
+            unsafe_allow_html=True,
+        )
+        with st.form("login_form"):
             password = st.text_input("Password", type="password", label_visibility="visible")
             submitted = st.form_submit_button("🔓 Sblocca", type="primary", use_container_width=True)
         if submitted:
@@ -138,7 +83,6 @@ def require_login() -> None:
                 _rerun()
             else:
                 st.error("Password errata. Riprova.")
-    st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
 
@@ -300,26 +244,18 @@ def speakable_grid(items: list[dict], language: str, columns: int = 4, detail_ke
             f'<span class="de">{word} <b>🔊</b></span><span class="translation">{detail}</span></button>'
         )
     rows = max(1, (len(items) + columns - 1) // columns)
-    row_height = 92
     component = f"""
-    <!DOCTYPE html>
-    <html><head><meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <style>
-      *{{box-sizing:border-box}} body{{margin:0;padding:6px;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:{'#0e1117' if IS_DARK else '#f6f8fc'};color:{'#fafafa' if IS_DARK else '#152033'}}}
-      .grid{{display:grid;grid-template-columns:repeat({columns},minmax(0,1fr));gap:10px}}
-      .term{{border:1px solid {'#3a4a5a' if IS_DARK else '#dce7f0'};border-radius:12px;background:{'#1e1e1e' if IS_DARK else '#fff'};padding:14px 12px;text-align:left;cursor:pointer;min-height:76px;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:all .15s ease}}
-      .term:hover{{border-color:#0d7c9c;background:{'#1a2a3a' if IS_DARK else '#effbff'};transform:translateY(-1px)}}
-      .term:active{{transform:scale(0.98)}}
-      .de{{display:block;font-weight:750;color:{'#e2e8f0' if IS_DARK else '#12365d'};font-size:15px;line-height:1.35}} .translation{{display:block;color:{'#94a3b8' if IS_DARK else '#64748b'};font-size:13px;margin-top:6px;line-height:1.4}}
-      @media(max-width:768px){{.grid{{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}} .term{{padding:16px 12px;min-height:80px;border-radius:10px}} .de{{font-size:16px}} .translation{{font-size:14px}}}}
-      @media(max-width:480px){{.grid{{grid-template-columns:repeat(1,minmax(0,1fr))}} .term{{padding:18px 14px;min-height:88px}} .de{{font-size:17px}} .translation{{font-size:15px}}}}
-      @media(min-width:1200px){{.grid{{grid-template-columns:repeat({min(columns, 6)},minmax(0,1fr))}}}}
+    <html><head><meta charset="utf-8"><style>
+      *{{box-sizing:border-box}} body{{margin:0;padding:2px;font-family:system-ui,-apple-system,Segoe UI,sans-serif}}
+      .grid{{display:grid;grid-template-columns:repeat({columns},minmax(0,1fr));gap:9px}}
+      .term{{border:1px solid #dce7f0;border-radius:11px;background:#fff;padding:11px 10px;text-align:left;cursor:pointer;min-height:68px}}
+      .term:hover{{border-color:#0d7c9c;background:#effbff;transform:translateY(-1px)}}
+      .de{{display:block;font-weight:750;color:#12365d;font-size:14px}} .translation{{display:block;color:#64748b;font-size:12px;margin-top:5px}}
+      @media(max-width:620px){{.grid{{grid-template-columns:repeat(2,minmax(0,1fr))}}}}
     </style></head><body><div class="grid">{''.join(cells)}</div>
     <script>
       function germanVoice() {{
-        const voices = speechSynthesis.getVoices();
-        return voices.find(v => v.lang.toLowerCase().startsWith('de')) || voices.find(v => v.lang.toLowerCase().includes('de')) || null;
+        return speechSynthesis.getVoices().find(v => v.lang.toLowerCase().startsWith('de')) || null;
       }}
       function say(word, button) {{
         window.speechSynthesis.cancel();
@@ -328,17 +264,16 @@ def speakable_grid(items: list[dict], language: str, columns: int = 4, detail_ke
         const voice = germanVoice(); if (voice) u.voice = voice;
         const original = button.innerHTML;
         u.onstart = () => {{ button.style.borderColor = '#0d7c9c'; }};
-        u.onend = () => {{ button.style.borderColor = ''; button.innerHTML = original; }};
-        u.onerror = () => {{ button.style.borderColor = ''; button.innerHTML = original; }};
+        u.onend = u.onerror = () => {{ button.style.borderColor = ''; button.innerHTML = original; }};
         button.innerHTML = button.innerHTML.replace('🔊', '🔉');
         window.speechSynthesis.speak(u);
       }}
-      if (speechSynthesis.onvoiceschanged !== undefined) {{
-        speechSynthesis.onvoiceschanged = () => germanVoice();
-      }}
+      window.speechSynthesis.onvoiceschanged = () => germanVoice();
     </script>
     </body></html>"""
-    components.html(component, height=max(120, rows * row_height + 16), scrolling=False)
+    # Il componente mantiene il gesto di clic nel documento che esegue la voce;
+    # questo è necessario perché i browser autorizzino la sintesi vocale.
+    components.html(component, height=max(100, rows * 81 + 8), scrolling=False)
 
 
 # ---------------------------------------------------------------------------
@@ -749,10 +684,9 @@ def make_test_key(scope: str) -> str:
 def load_or_refresh_test(scope: str, pool: list[dict], amount: int, refresh: bool = False) -> tuple[list[dict], int]:
     key, token_key = make_test_key(scope), f"test_{scope}_token"
     if refresh or key not in st.session_state:
-        st.session_state[key] = random.sample(pool, min(amount, len(pool)))
+        st.session_state[key] = random.sample(pool, amount)
         st.session_state[token_key] = st.session_state.get(token_key, 0) + 1
         st.session_state.pop(f"test_{scope}_submitted", None)
-        st.session_state.pop(f"test_{scope}_answers", None)
     return st.session_state[key], st.session_state[token_key]
 
 
@@ -809,8 +743,7 @@ def render_course(level: str, language: str) -> None:
         st.caption("🇩🇪 " + tx("pronunciation"))
         for topic_index, topic in enumerate(course["topics"]):
             heading = f"{topic_index + 1} · {TOPIC_TITLES[language][level][topic_index]}"
-            topic_text = html.escape(getattr(topic, language))
-            st.markdown(f"<div class='card chapter'><h3>{html.escape(heading)}</h3><p>{topic_text}</p></div>", unsafe_allow_html=True)
+            st.markdown(f"<div class='card chapter'><h3>{heading}</h3><p>{getattr(topic, language)}</p></div>", unsafe_allow_html=True)
             examples = [{"de": line, "it": "Esempio da ascoltare", "en": "Listen to the example", "es": "Escucha el ejemplo", "tr": "Örneği dinleyin"} for line in topic.examples]
             speakable_grid(examples, language, columns=2, detail_key="translation")
     with tab_test:
@@ -950,7 +883,7 @@ def render_subjects(language: str) -> None:
     choice = st.selectbox(tx("subject_topic"), list(SUBJECTS.keys()), format_func=lambda key: SUBJECT_LABELS[key][language])
     _, _, terms = SUBJECTS[choice]
     st.subheader(SUBJECT_LABELS[choice][language])
-    st.markdown(f"<div class='card chapter'><p>{html.escape(SUBJECT_INTROS[language])}</p></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='card chapter'><p>{SUBJECT_INTROS[language]}</p></div>", unsafe_allow_html=True)
     st.caption("🇩🇪 " + tx("pronunciation"))
     speakable_grid(terms, language, columns=4, detail_key="translation")
     if choice == "🗺️ Geografia e società":
@@ -1139,14 +1072,11 @@ assert len(VERBS) == 150, f"Attesi 150 verbi, trovati {len(VERBS)}"
 
 def render_verbs(language: str) -> None:
     st.header(tx("verb_glossary"))
-    st.markdown(f"<div class='card chapter'><p>{html.escape(tx('verb_intro'))}</p></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='card chapter'><p>{tx('verb_intro')}</p></div>", unsafe_allow_html=True)
     query = st.text_input(tx("filter"))
     query = query.casefold().strip()
     shown = [verb for verb in VERBS if not query or query in verb["de"].casefold() or query in tr(verb, language).casefold()]
     st.caption(f"{len(shown)} / {len(VERBS)} {tx('verb_count')}")
-    if not shown:
-        st.info("Nessun verbo trovato per questo filtro.")
-        return
     for start in range(0, len(shown), 30):
         chunk = shown[start:start + 30]
         speakable_grid(chunk, language, columns=5, detail_key="translation")
@@ -1158,7 +1088,7 @@ def render_verbs(language: str) -> None:
 
 def render_about() -> None:
     st.header(tx("about"))
-    st.markdown(f"<div class='card chapter'><h3>{html.escape(tx('method_title'))}</h3><p>{html.escape(tx('method_text'))}</p></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='card chapter'><h3>{tx('method_title')}</h3><p>{tx('method_text')}</p></div>", unsafe_allow_html=True)
     st.markdown("#### " + tx("sources"))
     st.markdown(tx("source_links"))
     st.markdown("#### " + tx("pronunciation_how"))
@@ -1175,8 +1105,9 @@ with top_info:
 with language_column:
     if "interface_language_choice" not in st.session_state:
         st.session_state["interface_language_choice"] = "Italiano"
+    interface_language = LANGUAGES[st.session_state["interface_language_choice"]]
     language_label = st.selectbox(
-        "🌐 " + UI[LANGUAGES[st.session_state["interface_language_choice"]]]["language"],
+        "🌐 " + UI[interface_language]["language"],
         list(LANGUAGES.keys()),
         key="interface_language_choice",
     )
@@ -1201,7 +1132,7 @@ st.sidebar.caption(f"{tx('bank')}: **500** {tx('questions')}")
 st.sidebar.caption(tx("sidebar_summary"))
 st.sidebar.caption("🔊 de-DE SpeechSynthesis")
 
-st.markdown(f"<section class='hero'><h1>🇩🇪 Der Deutsche Meister</h1><p>{html.escape(tx('tagline'))} · A1–B2</p></section>", unsafe_allow_html=True)
+st.markdown(f"<section class='hero'><h1>🇩🇪 Der Deutsche Meister</h1><p>{tx('tagline')} · A1–B2</p></section>", unsafe_allow_html=True)
 
 if section in COURSES:
     render_course(section, language)
