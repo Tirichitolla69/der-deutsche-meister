@@ -6,12 +6,41 @@ from __future__ import annotations
 
 import html
 import json
+import os
 import random
 from dataclasses import dataclass
 
 import streamlit as st
 import streamlit.components.v1 as components
 
+
+
+# ---------------------------------------------------------------------------
+# Rilevamento tema (light / dark) per CSS adattivo
+# ---------------------------------------------------------------------------
+try:
+    _theme_base = st.get_option("theme.base")
+except Exception:
+    _theme_base = "light"
+IS_DARK = _theme_base == "dark"
+
+# Palette adattiva
+C = {
+    "app_bg": "#0e1117" if IS_DARK else "#f6f8fc",
+    "text": "#fafafa" if IS_DARK else "#152033",
+    "card_bg": "#1e1e1e" if IS_DARK else "#ffffff",
+    "card_border": "#2d2d2d" if IS_DARK else "#e3e9f2",
+    "note_bg": "#1a2332" if IS_DARK else "#edf8ff",
+    "note_border": "#2a3a4a" if IS_DARK else "#cbe8f4",
+    "sidebar_bg": "#161616" if IS_DARK else "#ffffff",
+    "sidebar_border": "#2d2d2d" if IS_DARK else "#e3e9f2",
+    "source": "#a0a8b0" if IS_DARK else "#617186",
+    "translation": "#94a3b8" if IS_DARK else "#64748b",
+    "term_border": "#3a4a5a" if IS_DARK else "#dce7f0",
+    "term_hover_bg": "#1a2a3a" if IS_DARK else "#effbff",
+    "term_hover_border": "#0d7c9c",
+    "hero_grad": "linear-gradient(118deg,#0a1a2e,#0d4a6a 58%,#085e4e)" if IS_DARK else "linear-gradient(118deg,#112a46,#146c94 58%,#0b8e75)",
+}
 
 st.set_page_config(
     page_title="Der Deutsche Meister | A1–B2",
@@ -21,24 +50,42 @@ st.set_page_config(
 )
 
 st.markdown(
-    """
+    f"""
     <style>
-      .stApp { background: #f6f8fc; color: #152033; }
-      [data-testid="stSidebar"] { background: #fff; border-right: 1px solid #e3e9f2; }
-      .hero { padding: 1.6rem 1.8rem; border-radius: 18px; color: white;
-              background: linear-gradient(118deg,#112a46,#146c94 58%,#0b8e75); margin: .2rem 0 1.25rem; }
-      .hero h1 { margin: 0; font-size: 2.05rem; }
-      .hero p { margin: .35rem 0 0; opacity: .92; }
-      .card { background: white; border: 1px solid #e3e9f2; border-radius: 14px; padding: 1.05rem 1.2rem;
-              box-shadow: 0 2px 10px rgba(24,44,74,.045); margin: .65rem 0; }
-      .chapter { border-left: 5px solid #168aab; }
-      .chapter h3 { margin: 0 0 .55rem; color: #12345a; }
-      .chapter p { line-height: 1.62; margin: .25rem 0; }
-      .level { display:inline-block; color:#fff; font-weight:750; padding:.2rem .7rem; border-radius:99px; margin-bottom:.55rem; }
-      .A1{background:#16835b}.A2{background:#2563b8}.B1{background:#b66308}.B2{background:#bd3535}
-      .note { background:#edf8ff; border-radius:10px; padding:.75rem 1rem; border:1px solid #cbe8f4; }
-      .source { color:#617186; font-size:.9rem; }
-      .smallcaps { color:#5c6c80; text-transform:uppercase; letter-spacing:.06em; font-size:.75rem; font-weight:700; }
+      .stApp {{ background: {C['app_bg']}; color: {C['text']}; }}
+      [data-testid="stSidebar"] {{ background: {C['sidebar_bg']}; border-right: 1px solid {C['sidebar_border']}; }}
+      .hero {{ padding: 1.6rem 1.8rem; border-radius: 18px; color: white;
+              background: {C['hero_grad']}; margin: .2rem 0 1.25rem; }}
+      .hero h1 {{ margin: 0; font-size: 2.05rem; }}
+      .hero p {{ margin: .35rem 0 0; opacity: .92; }}
+      .card {{ background: {C['card_bg']}; border: 1px solid {C['card_border']}; border-radius: 14px; padding: 1.05rem 1.2rem;
+              box-shadow: 0 2px 10px rgba(0,0,0,.08); margin: .65rem 0; color: {C['text']}; }}
+      .chapter {{ border-left: 5px solid #168aab; }}
+      .chapter h3 {{ margin: 0 0 .55rem; color: {C['text']}; }}
+      .chapter p {{ line-height: 1.62; margin: .25rem 0; }}
+      .level {{ display:inline-block; color:#fff; font-weight:750; padding:.2rem .7rem; border-radius:99px; margin-bottom:.55rem; }}
+      .A1{{background:#16835b}}.A2{{background:#2563b8}}.B1{{background:#b66308}}.B2{{background:#bd3535}}
+      .note {{ background:{C['note_bg']}; border-radius:10px; padding:.75rem 1rem; border:1px solid {C['note_border']}; color: {C['text']}; }}
+      .source {{ color:{C['source']}; font-size:.9rem; }}
+      .smallcaps {{ color:{C['source']}; text-transform:uppercase; letter-spacing:.06em; font-size:.75rem; font-weight:700; }}
+
+      /* Mobile optimisations */
+      @media (max-width: 768px) {{
+        .hero {{ padding: 1rem 1.1rem !important; border-radius: 12px; }}
+        .hero h1 {{ font-size: 1.45rem !important; }}
+        .hero p {{ font-size: 0.95rem; }}
+        .card {{ padding: 0.85rem 0.9rem !important; margin: 0.45rem 0 !important; border-radius: 10px; }}
+        .chapter h3 {{ font-size: 1.05rem; }}
+        .level {{ font-size: 0.8rem; padding: .15rem .55rem; }}
+        .note {{ padding: .6rem .8rem; }}
+      }}
+
+      /* Scrollbar dark mode */
+      @media (prefers-color-scheme: dark) {{
+        ::-webkit-scrollbar {{ width: 8px; height: 8px; }}
+        ::-webkit-scrollbar-track {{ background: #1e1e1e; }}
+        ::-webkit-scrollbar-thumb {{ background: #4a4a4a; border-radius: 4px; }}
+      }}
     </style>
     """,
     unsafe_allow_html=True,
@@ -48,7 +95,7 @@ st.markdown(
 # ---------------------------------------------------------------------------
 # Accesso: l'app resta bloccata finché non si inserisce la password corretta.
 # ---------------------------------------------------------------------------
-APP_PASSWORD = "lala31"
+APP_PASSWORD = st.secrets.get("APP_PASSWORD", os.environ.get("APP_PASSWORD", "lala31"))
 
 
 def _rerun() -> None:
@@ -68,21 +115,30 @@ def require_login() -> None:
         "<p>Accesso riservato · inserisci la password per continuare</p></section>",
         unsafe_allow_html=True,
     )
-    _, mid, _ = st.columns([1, 1.3, 1])
-    with mid:
-        st.markdown(
-            "<div class='note'>🔒 Questa applicazione è protetta: inserisci la password per sbloccarla.</div>",
-            unsafe_allow_html=True,
-        )
-        with st.form("login_form"):
-            password = st.text_input("Password", type="password", label_visibility="visible")
-            submitted = st.form_submit_button("🔓 Sblocca", type="primary", use_container_width=True)
-        if submitted:
-            if password == APP_PASSWORD:
-                st.session_state["authenticated"] = True
-                _rerun()
-            else:
-                st.error("Password errata. Riprova.")
+    st.markdown(
+        f"""
+        <style>
+        .login-wrap {{ max-width: 460px; margin: 0 auto; padding: 0 10px; }}
+        @media (max-width: 480px) {{ .login-wrap {{ max-width: 100%; }} }}
+        </style>
+        <div class="login-wrap">
+        """,
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        f"<div class='note'>🔒 Questa applicazione è protetta: inserisci la password per sbloccarla.</div>",
+        unsafe_allow_html=True,
+    )
+    with st.form("login_form"):
+        password = st.text_input("Password", type="password", label_visibility="visible")
+        submitted = st.form_submit_button("🔓 Sblocca", type="primary", use_container_width=True)
+    if submitted:
+        if password == APP_PASSWORD:
+            st.session_state["authenticated"] = True
+            _rerun()
+        else:
+            st.error("Password errata. Riprova.")
+    st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
 
@@ -110,7 +166,7 @@ UI = {
         "integrated": "Competenze integrate", "integrated_text": "Ogni livello combina grammatica, lessico, lettura, produzione scritta e comunicazione quotidiana/professionale. Le attività B1–B2 introducono in modo esplicito candidatura, team, istruzioni e argomentazione.",
         "quiz_note": "🧩 La prova alterna scelta e completamenti con banca di parole. Nessuna risposta è preselezionata e l'ordine delle opzioni cambia a ogni nuova prova.",
         "about": "Metodo, fonti e uso", "method_title": "Un libro digitale, non una lista di regole", "method_text": "La sequenza A1–B2 unisce competenze del QCER a scenari di vita, formazione e lavoro. A1–A2 costruiscono scambio quotidiano e routine; B1 allena spiegazione, candidatura e lavoro in team; B2 lavora su registro, fonti, argomentazione e testi specialistici.", "sources": "Riferimenti pedagogici", "pronunciation_how": "Come funziona la pronuncia", "pronunciation_text": "Ogni lemma nei glossari e tutti gli esempi della teoria sono cliccabili: il browser usa la sintesi vocale impostata su de-DE. Se sul dispositivo è disponibile più di una voce tedesca, viene utilizzata quella di sistema.", "source_note": "Nota: il corso è materiale di pratica originale. I riferimenti orientano il livello e le competenze, ma non sostituiscono le informazioni ufficiali di un ente certificatore.",
-        "state": "Stato federato", "capital": "Capitale", "region": "Regione", "can_do": "Obiettivo pratico", "test_summary": "40/40 estratti senza ripetizioni", "verb_count": "verbi", "sidebar_summary": "4 corsi × 40 domande · esame integrale × 40", "source_links": "- [Goethe-Institut — livelli A1–C2 e descrittori QCER](https://www.goethe.de/ins/de/it/uun/dln/ger.html)\n- [IHK — formazione linguistica e candidatura professionale](https://events.mnr.ihk.de/b?p=FB426)",
+        "state": "Stato federato", "capital": "Capitale", "region": "Regione", "can_do": "Obiettivo pratico", "theory_rule": "Regola", "theory_why": "Perché funziona così", "theory_history": "Un po' di storia", "theory_tip": "Attenzione", "test_summary": "40/40 estratti senza ripetizioni", "verb_count": "verbi", "sidebar_summary": "4 corsi × 40 domande · esame integrale × 40", "source_links": "- [Goethe-Institut — livelli A1–C2 e descrittori QCER](https://www.goethe.de/ins/de/it/uun/dln/ger.html)\n- [IHK — formazione linguistica e candidatura professionale](https://events.mnr.ihk.de/b?p=FB426)",
     },
     "en": {
         "tagline": "A structured path through German, culture and professional German",
@@ -128,7 +184,7 @@ UI = {
         "integrated": "Integrated skills", "integrated_text": "Each level combines grammar, vocabulary, reading, written production and everyday/professional communication. B1–B2 activities explicitly introduce applications, teamwork, instructions and argumentation.",
         "quiz_note": "🧩 The test mixes multiple choice and word-bank completions. No answer is preselected, and option order changes with every new test.",
         "about": "Method, sources and use", "method_title": "A digital book, not a list of rules", "method_text": "The A1–B2 sequence connects CEFR competences to life, study and work scenarios. A1–A2 build everyday exchange and routines; B1 practises explanation, applications and teamwork; B2 develops register, sources, argument and specialist texts.", "sources": "Pedagogical references", "pronunciation_how": "How pronunciation works", "pronunciation_text": "Every glossary entry and every theory example is clickable: the browser uses the de-DE speech voice. If more than one German voice is available, the system voice is used.", "source_note": "Note: this is original practice material. The references orient the level and competences, but do not replace information issued by a certifying body.",
-        "state": "Federal state", "capital": "Capital", "region": "Region", "can_do": "Practical goal", "test_summary": "40/40 drawn without repetition", "verb_count": "verbs", "sidebar_summary": "4 courses × 40 questions · integrated exam × 40", "source_links": "- [Goethe-Institut — A1–C2 levels and CEFR descriptors](https://www.goethe.de/ins/de/en/uun/dln/ger.html)\n- [IHK — language training and professional applications](https://events.mnr.ihk.de/b?p=FB426)",
+        "state": "Federal state", "capital": "Capital", "region": "Region", "can_do": "Practical goal", "theory_rule": "Rule", "theory_why": "Why it works this way", "theory_history": "A bit of history", "theory_tip": "Watch out", "test_summary": "40/40 drawn without repetition", "verb_count": "verbs", "sidebar_summary": "4 courses × 40 questions · integrated exam × 40", "source_links": "- [Goethe-Institut — A1–C2 levels and CEFR descriptors](https://www.goethe.de/ins/de/en/uun/dln/ger.html)\n- [IHK — language training and professional applications](https://events.mnr.ihk.de/b?p=FB426)",
     },
     "es": {
         "tagline": "Itinerario de alemán, cultura y comunicación profesional",
@@ -146,7 +202,7 @@ UI = {
         "integrated": "Competencias integradas", "integrated_text": "Cada nivel combina gramática, léxico, lectura, producción escrita y comunicación cotidiana/profesional. Las actividades B1–B2 introducen explícitamente solicitudes, trabajo en equipo, instrucciones y argumentación.",
         "quiz_note": "🧩 La prueba alterna selección y completamientos con banco de palabras. Ninguna respuesta está preseleccionada y el orden de opciones cambia en cada prueba nueva.",
         "about": "Método, fuentes y uso", "method_title": "Un libro digital, no una lista de reglas", "method_text": "La secuencia A1–B2 conecta competencias del MCER con situaciones de vida, formación y trabajo. A1–A2 construyen intercambios cotidianos; B1 practica explicación, solicitudes y equipo; B2 desarrolla registro, fuentes, argumentación y textos especializados.", "sources": "Referencias pedagógicas", "pronunciation_how": "Cómo funciona la pronunciación", "pronunciation_text": "Cada entrada del glosario y cada ejemplo teórico son clicables: el navegador usa la voz de síntesis de de-DE. Si hay varias voces alemanas disponibles, se usa la del sistema.", "source_note": "Nota: el curso es material de práctica original. Las referencias orientan el nivel y las competencias, pero no sustituyen la información oficial de una entidad certificadora.",
-        "state": "Estado federado", "capital": "Capital", "region": "Región", "can_do": "Objetivo práctico", "test_summary": "40/40 seleccionadas sin repetición", "verb_count": "verbos", "sidebar_summary": "4 cursos × 40 preguntas · examen integral × 40", "source_links": "- [Goethe-Institut — niveles A1–C2 y descriptores del MCER](https://www.goethe.de/ins/de/es/uun/dln/ger.html)\n- [IHK — formación lingüística y candidatura profesional](https://events.mnr.ihk.de/b?p=FB426)",
+        "state": "Estado federado", "capital": "Capital", "region": "Región", "can_do": "Objetivo práctico", "theory_rule": "Regla", "theory_why": "Por qué funciona así", "theory_history": "Un poco de historia", "theory_tip": "Atención", "test_summary": "40/40 seleccionadas sin repetición", "verb_count": "verbos", "sidebar_summary": "4 cursos × 40 preguntas · examen integral × 40", "source_links": "- [Goethe-Institut — niveles A1–C2 y descriptores del MCER](https://www.goethe.de/ins/de/es/uun/dln/ger.html)\n- [IHK — formación lingüística y candidatura profesional](https://events.mnr.ihk.de/b?p=FB426)",
     },
     "tr": {
         "tagline": "Almanca, kültür ve meslekî iletişim için yapılandırılmış eğitim yolu",
@@ -164,7 +220,7 @@ UI = {
         "integrated": "Bütünleşik beceriler", "integrated_text": "Her seviye dil bilgisi, kelime hazinesi, okuma, yazılı üretim ve günlük/meslekî iletişimi birleştirir. B1–B2 etkinlikleri başvuru, ekip çalışması, talimatlar ve tartışmayı açıkça ele alır.",
         "quiz_note": "🧩 Test, çoktan seçmeli sorularla kelime havuzlu tamamlama sorularını birleştirir. Hiçbir cevap önceden seçilmez ve seçeneklerin sırası her yeni testte değişir.",
         "about": "Yöntem, kaynaklar ve kullanım", "method_title": "Kural listesi değil, dijital bir kitap", "method_text": "A1–B2 dizisi CEFR becerilerini yaşam, eğitim ve iş senaryolarıyla birleştirir. A1–A2 günlük iletişimi kurar; B1 açıklama, başvuru ve ekip çalışmasını; B2 ise üslup, kaynaklar, tartışma ve uzmanlık metinlerini geliştirir.", "sources": "Eğitsel kaynaklar", "pronunciation_how": "Telaffuz nasıl çalışır", "pronunciation_text": "Sözlüklerdeki her madde ve kuram örnekleri tıklanabilir: tarayıcı de-DE konuşma sesini kullanır. Birden çok Almanca ses varsa sistem sesi kullanılır.", "source_note": "Not: Kurs özgün alıştırma materyalidir. Kaynaklar seviyeyi ve becerileri yönlendirir; sertifikalandırma kuruluşunun resmî bilgisinin yerini almaz.",
-        "state": "Eyalet", "capital": "Başkent", "region": "Bölge", "can_do": "Pratik hedef", "test_summary": "40/40 soru tekrarsız seçildi", "verb_count": "fiil", "sidebar_summary": "4 kurs × 40 soru · bütünleşik sınav × 40", "source_links": "- [Goethe-Institut — A1–C2 seviyeleri ve CEFR tanımlayıcıları](https://www.goethe.de/ins/de/tr/uun/dln/ger.html)\n- [IHK — dil eğitimi ve meslekî başvuru](https://events.mnr.ihk.de/b?p=FB426)",
+        "state": "Eyalet", "capital": "Başkent", "region": "Bölge", "can_do": "Pratik hedef", "theory_rule": "Kural", "theory_why": "Neden böyle işler", "theory_history": "Biraz tarih", "theory_tip": "Dikkat", "test_summary": "40/40 soru tekrarsız seçildi", "verb_count": "fiil", "sidebar_summary": "4 kurs × 40 soru · bütünleşik sınav × 40", "source_links": "- [Goethe-Institut — A1–C2 seviyeleri ve CEFR tanımlayıcıları](https://www.goethe.de/ins/de/tr/uun/dln/ger.html)\n- [IHK — dil eğitimi ve meslekî başvuru](https://events.mnr.ihk.de/b?p=FB426)",
     },
 }
 
@@ -244,18 +300,26 @@ def speakable_grid(items: list[dict], language: str, columns: int = 4, detail_ke
             f'<span class="de">{word} <b>🔊</b></span><span class="translation">{detail}</span></button>'
         )
     rows = max(1, (len(items) + columns - 1) // columns)
+    row_height = 92
     component = f"""
-    <html><head><meta charset="utf-8"><style>
-      *{{box-sizing:border-box}} body{{margin:0;padding:2px;font-family:system-ui,-apple-system,Segoe UI,sans-serif}}
-      .grid{{display:grid;grid-template-columns:repeat({columns},minmax(0,1fr));gap:9px}}
-      .term{{border:1px solid #dce7f0;border-radius:11px;background:#fff;padding:11px 10px;text-align:left;cursor:pointer;min-height:68px}}
-      .term:hover{{border-color:#0d7c9c;background:#effbff;transform:translateY(-1px)}}
-      .de{{display:block;font-weight:750;color:#12365d;font-size:14px}} .translation{{display:block;color:#64748b;font-size:12px;margin-top:5px}}
-      @media(max-width:620px){{.grid{{grid-template-columns:repeat(2,minmax(0,1fr))}}}}
+    <!DOCTYPE html>
+    <html><head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+      *{{box-sizing:border-box}} body{{margin:0;padding:6px;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:{'#0e1117' if IS_DARK else '#f6f8fc'};color:{'#fafafa' if IS_DARK else '#152033'}}}
+      .grid{{display:grid;grid-template-columns:repeat({columns},minmax(0,1fr));gap:10px}}
+      .term{{border:1px solid {'#3a4a5a' if IS_DARK else '#dce7f0'};border-radius:12px;background:{'#1e1e1e' if IS_DARK else '#fff'};padding:14px 12px;text-align:left;cursor:pointer;min-height:76px;touch-action:manipulation;-webkit-tap-highlight-color:transparent;transition:all .15s ease}}
+      .term:hover{{border-color:#0d7c9c;background:{'#1a2a3a' if IS_DARK else '#effbff'};transform:translateY(-1px)}}
+      .term:active{{transform:scale(0.98)}}
+      .de{{display:block;font-weight:750;color:{'#e2e8f0' if IS_DARK else '#12365d'};font-size:15px;line-height:1.35}} .translation{{display:block;color:{'#94a3b8' if IS_DARK else '#64748b'};font-size:13px;margin-top:6px;line-height:1.4}}
+      @media(max-width:768px){{.grid{{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}} .term{{padding:16px 12px;min-height:80px;border-radius:10px}} .de{{font-size:16px}} .translation{{font-size:14px}}}}
+      @media(max-width:480px){{.grid{{grid-template-columns:repeat(1,minmax(0,1fr))}} .term{{padding:18px 14px;min-height:88px}} .de{{font-size:17px}} .translation{{font-size:15px}}}}
+      @media(min-width:1200px){{.grid{{grid-template-columns:repeat({min(columns, 6)},minmax(0,1fr))}}}}
     </style></head><body><div class="grid">{''.join(cells)}</div>
     <script>
       function germanVoice() {{
-        return speechSynthesis.getVoices().find(v => v.lang.toLowerCase().startsWith('de')) || null;
+        const voices = speechSynthesis.getVoices();
+        return voices.find(v => v.lang.toLowerCase().startsWith('de')) || voices.find(v => v.lang.toLowerCase().includes('de')) || null;
       }}
       function say(word, button) {{
         window.speechSynthesis.cancel();
@@ -264,28 +328,39 @@ def speakable_grid(items: list[dict], language: str, columns: int = 4, detail_ke
         const voice = germanVoice(); if (voice) u.voice = voice;
         const original = button.innerHTML;
         u.onstart = () => {{ button.style.borderColor = '#0d7c9c'; }};
-        u.onend = u.onerror = () => {{ button.style.borderColor = ''; button.innerHTML = original; }};
+        u.onend = () => {{ button.style.borderColor = ''; button.innerHTML = original; }};
+        u.onerror = () => {{ button.style.borderColor = ''; button.innerHTML = original; }};
         button.innerHTML = button.innerHTML.replace('🔊', '🔉');
         window.speechSynthesis.speak(u);
       }}
-      window.speechSynthesis.onvoiceschanged = () => germanVoice();
+      if (speechSynthesis.onvoiceschanged !== undefined) {{
+        speechSynthesis.onvoiceschanged = () => germanVoice();
+      }}
     </script>
     </body></html>"""
-    # Il componente mantiene il gesto di clic nel documento che esegue la voce;
-    # questo è necessario perché i browser autorizzino la sintesi vocale.
-    components.html(component, height=max(100, rows * 81 + 8), scrolling=False)
+    components.html(component, height=max(120, rows * row_height + 16), scrolling=False)
 
 
 # ---------------------------------------------------------------------------
 # Percorso: spiegazioni nate per ciascuna lingua di app, con esempi tedeschi.
 # ---------------------------------------------------------------------------
 @dataclass(frozen=True)
+class Explanation:
+    """Una spiegazione teorica in 4 parti, uguali per ogni argomento e ogni lingua:
+    la regola, il motivo per cui funziona così, un cenno storico/di origine, un avvertimento pratico."""
+    rule: str
+    why: str
+    history: str
+    tip: str
+
+
+@dataclass(frozen=True)
 class Topic:
     title: str
-    it: str
-    en: str
-    es: str
-    tr: str
+    it: Explanation
+    en: Explanation
+    es: Explanation
+    tr: Explanation
     examples: tuple[str, ...]
 
 
@@ -295,12 +370,174 @@ COURSES: dict[str, dict] = {
         "title": {"it": "Fondamenta e vita quotidiana", "en": "Foundations and daily life", "es": "Fundamentos y vida cotidiana", "tr": "Temeller ve günlük yaşam"},
         "can": {"it": "Presentarti, capire istruzioni semplici e gestire scambi quotidiani brevi.", "en": "Introduce yourself, understand simple instructions and manage short everyday exchanges.", "es": "Presentarte, entender instrucciones sencillas y resolver intercambios cotidianos breves.", "tr": "Kendini tanıtmak, basit yönergeleri anlamak ve kısa günlük konuşmaları yürütmek."},
         "topics": [
-            Topic("1 · La frase principale", "Il verbo coniugato occupa la seconda posizione logica: il primo elemento può essere il soggetto, il tempo o un luogo. Questa regola costruisce la frase tedesca fin dall'inizio.", "The finite verb takes the second logical slot. Time or place may come first; the subject then follows the verb. Build this pattern before adding longer sentences.", "El verbo conjugado va en la segunda posición lógica. Si se adelanta el tiempo o el lugar, el sujeto pasa detrás del verbo.", "Çekimli fiil mantıksal olarak ikinci sıradadır. Zaman veya yer öne alınırsa özne fiilden sonra gelir.", ("Ich lerne heute Deutsch.", "Heute lerne ich Deutsch.")),
-            Topic("2 · Persone, sein e haben", "Pronomi personali, saluti e i due verbi più frequenti servono per identità, età, possesso e presentazioni. Impara le forme come blocchi sonori e usale in dialoghi brevi.", "Personal pronouns plus sein and haben let you state identity, age and possession. Practise complete answer turns rather than isolated endings.", "Los pronombres y sein/haben permiten hablar de identidad, edad y posesión. Practica respuestas completas, no solo terminaciones.", "Kişi zamirleri ile sein ve haben; kimlik, yaş ve sahiplik için temel araçlardır. Ekleri tek başına değil, tam cevaplarla çalışın.", ("Ich bin neu hier.", "Wir haben heute Unterricht.")),
-            Topic("3 · Articoli e accusativo", "Ogni sostantivo si studia con articolo e plurale. All'accusativo cambia in modo visibile soprattutto il maschile: der → den, ein → einen.", "Learn every noun with gender and plural. In the accusative, masculine articles visibly change: der becomes den and ein becomes einen.", "Aprende cada sustantivo con artículo y plural. En acusativo cambia sobre todo el masculino: der pasa a den.", "Her ismi artikeli ve çoğuluyla öğrenin. Akkusativde özellikle eril artikel değişir: der → den.", ("Der Mann kauft einen Kaffee.", "Ich sehe die Frau.")),
-            Topic("4 · Negazione e domande", "kein nega un nome senza articolo determinativo; nicht nega una qualità, un verbo o una parte precisa della frase. Le W‑Fragen chiedono informazione; nelle domande sì/no il verbo apre la frase.", "Use kein for an indefinite or zero-article noun and nicht for a verb, quality or a selected part of a sentence. Yes/no questions start with the verb.", "kein niega un sustantivo sin artículo definido; nicht niega verbo, cualidad o parte concreta. En preguntas sí/no el verbo va primero.", "kein belirsiz ya da artikelsiz ismi, nicht ise fiili veya niteliği olumsuzlar. Evet/hayır sorularında fiil baştadır.", ("Ich habe keine Zeit.", "Kommst du aus Italien?")),
-            Topic("5 · Verbi modali e separabili", "Con können, müssen e wollen l'infinito va alla fine. I prefissi separabili si staccano nella principale: una parentesi verbale che tornerà utile a tutti i livelli.", "With modal verbs, the lexical infinitive moves to the end. In a main clause a separable prefix moves to the end too—your first verb bracket.", "Con los modales el infinitivo léxico va al final. En la principal, el prefijo separable también se desplaza al final.", "Modal fiillerle asıl fiilin mastarı sona gider. Ayrılabilen önek de ana cümlede sona gider; bu ilk fiil parantezidir.", ("Ich kann heute kommen.", "Wir kaufen am Samstag ein.")),
-            Topic("6 · Tempo, numeri e routine", "L'unità A1 chiude con orari, date, acquisti e routine. Non memorizzare liste isolate: pronuncia a voce alta quantità, appuntamenti e prezzi in mini-scenari.", "Finish A1 with time, dates, shopping and routines. Say quantities, appointments and prices aloud inside mini-scenarios, not as detached lists.", "Termina A1 con horas, fechas, compras y rutinas. Di en voz alta cantidades, citas y precios dentro de miniescenarios.", "A1'i saatler, tarihler, alışveriş ve rutinlerle bitirin. Miktarları, randevuları ve fiyatları küçük senaryolarda sesli söyleyin.", ("Es ist Viertel nach acht.", "Der Termin ist am Montag.")),
+            Topic(
+                "1 · La frase principale",
+                Explanation(
+                    rule="Nella frase principale tedesca il verbo coniugato occupa sempre la seconda posizione logica (non necessariamente la seconda parola): il primo posto può contenere il soggetto, ma anche un'indicazione di tempo, luogo o modo. Se sposti in avanti qualcos'altro, il soggetto scivola subito dopo il verbo.",
+                    why="Questa regola dà al tedesco un punto fisso da cui orientarsi: chi ascolta sa già, dopo la prima informazione, dove trovare il verbo e può prevedere il resto della frase. È anche il motivo per cui puoi mettere in evidenza un elemento (oggi, in ufficio, con piacere) senza scardinare la struttura: basta spostarlo davanti e il verbo resta comunque al suo posto.",
+                    history="L'ordine verbo-seconda posizione (V2) è un tratto ereditato dal proto-germanico e condiviso con l'olandese; anche l'inglese antico lo possedeva, ma l'inglese moderno lo ha quasi perso, conservandone tracce solo in frasi letterarie come «Never have I seen…». Il tedesco lo ha invece mantenuto come regola sistematica.",
+                    tip="L'errore più comune di chi parla italiano è contare la seconda posizione come seconda parola anziché come secondo elemento logico: in «Heute lerne ich Deutsch», «heute» occupa da solo il primo posto, quindi «lerne» resta il secondo elemento anche se la frase ha già più parole prima del soggetto.",
+                ),
+                Explanation(
+                    rule="In a German main clause, the conjugated verb always takes the second logical slot (not necessarily the second word). The first slot can hold the subject, but also a time, place or manner expression; whatever else you move to the front, the subject slides to right after the verb.",
+                    why="This rule gives German a fixed anchor point: as soon as the listener hears the first piece of information, they already know where the verb will appear and can predict the rest of the sentence. It also means you can highlight an element (today, at the office, gladly) simply by moving it to the front - the verb stays exactly where it belongs.",
+                    history="Verb-second (V2) order is inherited from Proto-Germanic and shared with Dutch. Old English had it too, and faint traces survive in literary inversions like «Never have I seen…», but Modern English largely lost it, while German kept it as a systematic rule.",
+                    tip="The most common mistake for learners is treating «second» as the second word rather than the second logical element: in «Heute lerne ich Deutsch», «heute» alone fills the first slot, so «lerne» is still the second element even though several words now precede the subject.",
+                ),
+                Explanation(
+                    rule="En la oración principal alemana, el verbo conjugado ocupa siempre la segunda posición lógica (no necesariamente la segunda palabra): el primer lugar puede llevar el sujeto, pero también una indicación de tiempo, lugar o modo. Si adelantas otra cosa, el sujeto pasa justo detrás del verbo.",
+                    why="Esta regla da al alemán un punto fijo de referencia: en cuanto el oyente recibe la primera información, ya sabe dónde encontrará el verbo y puede anticipar el resto de la frase. Por eso también puedes destacar un elemento (hoy, en la oficina, con gusto) con solo adelantarlo: el verbo permanece en su sitio.",
+                    history="El orden verbo-segunda posición (V2) se hereda del protogermánico y se comparte con el neerlandés; el inglés antiguo también lo tenía, y quedan huellas en inversiones literarias como «Never have I seen…», pero el inglés moderno lo perdió casi por completo, mientras el alemán lo conservó como regla sistemática.",
+                    tip="El error más frecuente de un hispanohablante es contar la segunda posición como segunda palabra y no como segundo elemento lógico: en «Heute lerne ich Deutsch», «heute» ocupa por sí solo el primer lugar, así que «lerne» sigue siendo el segundo elemento aunque ya haya varias palabras antes del sujeto.",
+                ),
+                Explanation(
+                    rule="Almanca ana cümlede çekimli fiil her zaman mantıksal olarak ikinci sıradadır (mutlaka ikinci kelime değil): ilk sırada özne olabilir, ama bir zaman, yer veya tarz ifadesi de olabilir. Başka bir öge öne alındığında özne fiilden hemen sonra gelir.",
+                    why="Bu kural Almancaya sabit bir referans noktası verir: dinleyici ilk bilgiyi duyar duymaz fiilin nerede olacağını bilir ve cümlenin geri kalanını tahmin edebilir. Bu yüzden bir ögeyi (bugün, ofiste, memnuniyetle) öne alarak vurgulayabilirsin; fiil yine de yerinde kalır.",
+                    history="Fiil-ikinci (V2) sıralaması Proto-Germenceden miras kalmıştır ve Felemenkçeyle paylaşılır; Eski İngilizcede de vardı ve «Never have I seen…» gibi edebi devrik cümlelerde izleri kalmıştır, ama Modern İngilizce bunu büyük ölçüde kaybetmiştir; Almanca ise sistematik bir kural olarak korumuştur.",
+                    tip="En sık yapılan hata, ikinci sırayı ikinci kelime olarak değil, ikinci mantıksal öge olarak sayamamaktır: «Heute lerne ich Deutsch» cümlesinde «heute» tek başına ilk sırayı doldurur, bu yüzden özneden önce başka kelimeler olsa da «lerne» hâlâ ikinci ögedir.",
+                ),
+                ("Ich lerne heute Deutsch.", "Heute lerne ich Deutsch."),
+            ),
+            Topic(
+                "2 · Persone, sein e haben",
+                Explanation(
+                    rule="I pronomi personali (ich, du, er/sie/es, wir, ihr, sie/Sie) accompagnano i due verbi più frequenti del tedesco, sein (essere) e haben (avere), usati per identità, età, provenienza e possesso. Entrambi sono irregolari e vanno imparati come forme intere (ich bin, du bist, er ist…), non ricavati da uno schema.",
+                    why="Sein e haben non sono verbi come gli altri: più avanti serviranno anche da ausiliari per costruire altri tempi (lo vedrai con il Perfekt in A2), quindi impararli bene ora, in ogni persona, evita di doverci tornare sopra dopo. Esercita risposte intere («Ich bin Anna, ich komme aus Rom») invece delle sole desinenze isolate: la scioltezza nasce da blocchi completi, non da frammenti.",
+                    history="Come il verbo essere in italiano, anche sein è fortemente irregolare (si dice «suppletivo»): i verbi più usati in assoluto in una lingua tendono a restare irregolari nel tempo invece di uniformarsi alla coniugazione regolare, proprio perché li usiamo troppo spesso perché possano «smussarsi».",
+                    tip="Attenzione a non confondere il significato di base di sein (essere) con il ruolo che avrà più avanti come ausiliare: per ora concentrati solo sulle sei persone e sull'uso quotidiano, senza anticipare il Perfekt.",
+                ),
+                Explanation(
+                    rule="Personal pronouns (ich, du, er/sie/es, wir, ihr, sie/Sie) go together with German's two most frequent verbs, sein (to be) and haben (to have), used for identity, age, origin and possession. Both are irregular and must be learned as whole forms (ich bin, du bist, er ist…) rather than derived from a pattern.",
+                    why="Sein and haben are not just ordinary verbs: later they will also work as auxiliaries to build other tenses (you'll meet this with the Perfekt in A2), so learning every person solidly now saves you from relearning them later. Practise full answers («Ich bin Anna, ich komme aus Rom») rather than isolated endings - fluency comes from complete chunks, not fragments.",
+                    history="Like English «to be», German sein is heavily irregular, or «suppletive» - built from different historical roots for different forms. This is common across languages: the most frequently used verbs tend to stay irregular rather than level out, precisely because we use them too often to let them smooth over.",
+                    tip="Don't let the base meaning of sein (to be) blend with its later role as an auxiliary - for now, focus purely on the six persons and their everyday meaning, without jumping ahead to the Perfekt.",
+                ),
+                Explanation(
+                    rule="Los pronombres personales (ich, du, er/sie/es, wir, ihr, sie/Sie) acompañan a los dos verbos más frecuentes del alemán, sein (ser/estar) y haben (tener), usados para identidad, edad, procedencia y posesión. Ambos son irregulares y hay que aprenderlos como formas completas (ich bin, du bist, er ist…).",
+                    why="Sein y haben no son verbos cualquiera: más adelante funcionarán también como auxiliares para construir otros tiempos (lo verás con el Perfekt en A2), así que aprenderlos bien ahora, en cada persona, evita tener que volver atrás después. Practica respuestas completas («Ich bin Anna, ich komme aus Rom») y no solo terminaciones sueltas: así hablas antes y corriges después.",
+                    history="Como el verbo ser/estar en español, sein es muy irregular (se dice «supletivo»): los verbos más usados de una lengua tienden a quedarse irregulares con el tiempo en lugar de uniformarse, precisamente porque se usan demasiado como para «limarse».",
+                    tip="Cuidado con mezclar el significado básico de sein (ser/estar) con su papel posterior como auxiliar: por ahora concéntrate solo en las seis personas y su uso cotidiano, sin adelantar el Perfekt.",
+                ),
+                Explanation(
+                    rule="Kişi zamirleri (ich, du, er/sie/es, wir, ihr, sie/Sie), Almancanın en sık kullanılan iki fiili olan sein (olmak) ve haben (sahip olmak) ile birlikte kullanılır; kimlik, yaş, köken ve sahiplik için kullanılırlar. İkisi de düzensizdir ve tam biçimleriyle ezberlenmelidir (ich bin, du bist, er ist…).",
+                    why="Sein ve haben sıradan fiiller değildir: ileride başka zamanları kurmak için yardımcı fiil olarak da kullanılacaklar (A2'de Perfekt'te göreceksin), bu yüzden şimdi her kişiyi sağlam öğrenmek ileride tekrar dönmeni engeller. Sadece ekleri değil, tam cevapları çalış («Ich bin Anna, ich komme aus Rom») - akıcılık parçalardan değil bütün kalıplardan gelir.",
+                    history="İngilizcedeki «to be» gibi, Almancadaki sein de güçlü biçimde düzensizdir (kaynaşık/suppletive denir): bir dilde en sık kullanılan fiiller, düzenli çekime uymak yerine zamanla düzensiz kalma eğilimindedir, çünkü çok sık kullanıldıkları için düzleşmeye fırsat bulamazlar.",
+                    tip="Sein'in temel anlamını (olmak) ileride yardımcı fiil olarak üstleneceği rolle karıştırma; şimdilik sadece altı kişiyi ve günlük anlamını öğrenmeye odaklan, Perfekt'i şimdiden düşünme.",
+                ),
+                ("Ich bin neu hier.", "Wir haben heute Unterricht."),
+            ),
+            Topic(
+                "3 · Articoli e accusativo",
+                Explanation(
+                    rule="Ogni sostantivo tedesco va imparato insieme al suo articolo (der/die/das) e al plurale, perché il genere non si indovina dal significato. All'accusativo (il caso del complemento oggetto diretto) cambia in modo visibile soprattutto il maschile: der diventa den, ein diventa einen; femminile, neutro e plurale restano identici al nominativo.",
+                    why="Il tedesco usa il caso per segnalare chi fa l'azione e chi la subisce, indipendentemente dall'ordine delle parole: per questo puoi dire «Den Kaffee kauft der Mann» spostando l'oggetto davanti senza creare ambiguità, cosa impossibile in italiano senza preposizioni. Riconoscere l'accusativo maschile è il primo passo per capire questo meccanismo.",
+                    history="Il tedesco eredita il sistema dei casi dal proto-indoeuropeo, che ne aveva fino a otto; l'italiano lo ha perso quasi ovunque tranne che nei pronomi (io/mi/me), mentre il tedesco lo ha conservato spostandolo dal sostantivo all'articolo: cambia den, non «Kaffeen».",
+                    tip="L'errore tipico è dimenticare l'accusativo dopo i verbi transitivi più comuni (kaufen, sehen, haben, brauchen…) e lasciare l'articolo al nominativo: «Ich sehe der Mann» è sbagliato, la forma corretta è «Ich sehe den Mann».",
+                ),
+                Explanation(
+                    rule="Every German noun must be learned together with its article (der/die/das) and its plural, since gender cannot be guessed from meaning. In the accusative case (the direct object), the masculine changes visibly: der becomes den, ein becomes einen; feminine, neuter and plural stay identical to the nominative.",
+                    why="German uses case to mark who is doing the action and who is receiving it, independently of word order - which is why «Den Kaffee kauft der Mann» can move the object to the front without creating ambiguity, something English can't do without a fixed word order. Recognising the masculine accusative is the first key to this whole mechanism.",
+                    history="German inherits its case system from Proto-Indo-European, which had up to eight cases. English lost almost all of them, keeping traces only in pronouns (he/him, she/her), while German kept the system by shifting the marking onto the article rather than the noun itself: den changes, not «coffee-n».",
+                    tip="The classic mistake is forgetting the accusative after common transitive verbs (kaufen, sehen, haben, brauchen…) and leaving the article in the nominative: «Ich sehe der Mann» is wrong - the correct form is «Ich sehe den Mann».",
+                ),
+                Explanation(
+                    rule="Cada sustantivo alemán debe aprenderse junto con su artículo (der/die/das) y su plural, porque el género no se adivina por el significado. En acusativo (el caso del complemento directo) cambia de forma visible sobre todo el masculino: der pasa a den, ein pasa a einen; femenino, neutro y plural quedan igual que en nominativo.",
+                    why="El alemán usa el caso para marcar quién hace la acción y quién la recibe, independientemente del orden de las palabras: por eso se puede decir «Den Kaffee kauft der Mann» adelantando el objeto sin crear ambigüedad, algo que el español no puede hacer sin preposiciones como «a». Reconocer el acusativo masculino es la primera clave de este mecanismo.",
+                    history="El alemán hereda el sistema de casos del protoindoeuropeo, que llegó a tener hasta ocho; el español lo perdió casi del todo salvo en los pronombres (yo/me/mí), mientras que el alemán lo conservó desplazándolo del sustantivo al artículo: cambia den, no «Kaffeen».",
+                    tip="El error típico es olvidar el acusativo tras los verbos transitivos más comunes (kaufen, sehen, haben, brauchen…) y dejar el artículo en nominativo: «Ich sehe der Mann» es incorrecto; la forma correcta es «Ich sehe den Mann».",
+                ),
+                Explanation(
+                    rule="Her Almanca ismin artikeli (der/die/das) ve çoğulu birlikte öğrenilmelidir, çünkü cinsiyet anlamdan tahmin edilemez. Akkusativde (doğrudan nesne hâli) özellikle eril artikel görünür biçimde değişir: der → den, ein → einen; dişil, nötr ve çoğul ise nominatifle aynı kalır.",
+                    why="Almanca, kim eylemi yaptığını ve kimin etkilendiğini, kelime sırasından bağımsız olarak hâl ekiyle gösterir: bu yüzden «Den Kaffee kauft der Mann» derken nesneyi öne alabilirsin, hiçbir belirsizlik oluşmaz. Eril akkusativi tanımak bu sistemi çözmenin ilk adımıdır.",
+                    history="Almanca, hâl sistemini sekize kadar çıkan Proto-Hint-Avrupa dilinden miras almıştır; İngilizce bunun neredeyse tamamını kaybetmiştir, Almanca ise işaretlemeyi isimden artikele taşıyarak korumuştur: değişen den'dir, isim değil.",
+                    tip="Sık yapılan hata, kaufen, sehen, haben, brauchen gibi yaygın geçişli fiillerden sonra akkusativi unutup artikeli nominatifte bırakmaktır: «Ich sehe der Mann» yanlıştır, doğrusu «Ich sehe den Mann»dır.",
+                ),
+                ("Der Mann kauft einen Kaffee.", "Ich sehe die Frau."),
+            ),
+            Topic(
+                "4 · Negazione e domande",
+                Explanation(
+                    rule="kein nega un sostantivo che non ha un articolo determinativo (o che avrebbe un articolo indeterminativo): «Ich habe keine Zeit». nicht nega invece un verbo, un aggettivo o una parte precisa della frase: «Ich komme nicht». Le W-Fragen (wo, wann, warum…) chiedono un'informazione specifica; nelle domande sì/no il verbo apre semplicemente la frase.",
+                    why="Avere due negazioni diverse permette al tedesco di essere preciso su cosa viene negato: kein dice «zero esemplari di questo nome», mentre nicht può cancellare un intero fatto o solo un dettaglio, a seconda di dove lo metti. Il verbo in prima posizione nelle domande sì/no segnala subito all'ascoltatore che serve una risposta di quel tipo.",
+                    history="kein nasce storicamente come forma negativa legata a nicht + ein («non un/una»), diventata nel tempo una parola negativa a sé stante per i sostantivi. Il verbo in prima posizione nelle domande sì/no è la stessa logica del V2 vista nel primo capitolo, applicata al caso in cui non c'è nessun altro elemento prima del verbo.",
+                    tip="Errore frequente: usare nicht davanti a un sostantivo senza articolo («Ich habe nicht Zeit» è scorretto). Se il sostantivo non ha già un articolo determinativo, la negazione corretta è quasi sempre kein: «Ich habe keine Zeit».",
+                ),
+                Explanation(
+                    rule="kein negates a noun with no definite article (or that would otherwise take an indefinite one): «Ich habe keine Zeit». nicht negates a verb, an adjective, or one specific part of the sentence: «Ich komme nicht». W-questions (wo, wann, warum…) ask for a specific piece of information; yes/no questions simply put the verb first.",
+                    why="Having two different negation words lets German be precise about what is being negated: kein says «zero instances of this noun», while nicht can cancel an entire fact or just one detail, depending on where you place it. Putting the verb first in yes/no questions immediately signals that a yes/no answer is expected.",
+                    history="kein developed historically as a negative form related to nicht + ein («not a/not one»), which over time became its own standalone negative word for nouns. The verb-first pattern in yes/no questions is the same V2 logic from the first chapter, just applied to a case where nothing else precedes the verb.",
+                    tip="A common mistake is using nicht before a bare noun («Ich habe nicht Zeit» is incorrect). If the noun has no definite article already, the correct negation is almost always kein: «Ich habe keine Zeit».",
+                ),
+                Explanation(
+                    rule="kein niega un sustantivo que no lleva artículo determinado (o que llevaría uno indeterminado): «Ich habe keine Zeit». nicht niega en cambio un verbo, un adjetivo o una parte concreta de la frase: «Ich komme nicht». Las W-Fragen (wo, wann, warum…) piden una información concreta; en las preguntas de sí/no el verbo simplemente abre la frase.",
+                    why="Tener dos negaciones distintas permite al alemán ser preciso sobre qué se niega: kein dice «cero ejemplares de este sustantivo», mientras que nicht puede anular un hecho entero o solo un detalle, según dónde lo coloques. Poner el verbo primero en las preguntas de sí/no avisa de inmediato al oyente de que se espera ese tipo de respuesta.",
+                    history="kein surge históricamente como forma negativa ligada a nicht + ein («no un/una»), que con el tiempo se convirtió en una palabra negativa propia para los sustantivos. El verbo en primera posición en las preguntas de sí/no sigue la misma lógica del V2 vista en el primer capítulo.",
+                    tip="Error frecuente: usar nicht delante de un sustantivo sin artículo («Ich habe nicht Zeit» es incorrecto). Si el sustantivo no lleva ya un artículo determinado, la negación correcta es casi siempre kein: «Ich habe keine Zeit».",
+                ),
+                Explanation(
+                    rule="kein, belirli artikeli olmayan (ya da belirsiz artikel alacak) bir ismi olumsuzlar: «Ich habe keine Zeit». nicht ise bir fiili, bir sıfatı ya da cümlenin belirli bir bölümünü olumsuzlar: «Ich komme nicht». W-soruları (wo, wann, warum…) belirli bir bilgi ister; evet/hayır sorularında ise fiil cümleyi başlatır.",
+                    why="İki farklı olumsuzluk biçimine sahip olmak Almancanın neyin olumsuzlandığını netleştirmesini sağlar: kein «bu isimden sıfır tane» der, nicht ise konumuna göre tüm bir olguyu ya da yalnızca bir ayrıntıyı iptal edebilir. Evet/hayır sorularında fiili başa almak, dinleyiciye hemen o tür bir cevap beklendiğini gösterir.",
+                    history="kein, tarihsel olarak nicht + ein («bir tane değil») ile ilişkili bir olumsuzluk biçimi olarak doğmuş ve zamanla isimler için kendi başına bir kelime hâline gelmiştir. Evet/hayır sorularındaki fiil-başta düzeni, ilk bölümde gördüğün V2 mantığının aynısıdır.",
+                    tip="Sık yapılan hata, artikelsiz bir ismin önünde nicht kullanmaktır («Ich habe nicht Zeit» yanlıştır). İsmin zaten belirli bir artikeli yoksa doğru olumsuzluk neredeyse her zaman kein'dir: «Ich habe keine Zeit».",
+                ),
+                ("Ich habe keine Zeit.", "Kommst du aus Italien?"),
+            ),
+            Topic(
+                "5 · Verbi modali e separabili",
+                Explanation(
+                    rule="Con i verbi modali (können, müssen, wollen, dürfen, sollen, mögen) l'infinito del verbo principale va sempre alla fine della frase. Allo stesso modo, il prefisso dei verbi separabili (einkaufen, aufstehen, anrufen…) si stacca e va alla fine nella frase principale: einkaufen → «Wir kaufen … ein».",
+                    why="Il verbo coniugato resta in seconda posizione (come nel primo capitolo) mentre la parte «pesante» di significato si sposta in fondo: questo crea la cosiddetta parentesi verbale, una cornice che il tedesco userà sempre più spesso man mano che le frasi si allungano. Imparare a «sentire» questa cornice fin da ora rende più facile leggere frasi lunghe più avanti.",
+                    history="Anche l'inglese ha un fenomeno simile e imparentato: i phrasal verbs come «stand up», «give in», «look up» derivano dalla stessa origine germanica delle particelle separabili tedesche. La differenza è che il tedesco ha reso questo meccanismo una regola sistematica della frase principale, non solo un'abitudine lessicale.",
+                    tip="Errore comune: dimenticare il prefisso separabile alla fine della frase, lasciando solo «Wir kaufen am Samstag» (incompleto). Controlla sempre che il prefisso sia arrivato in fondo: «Wir kaufen am Samstag ein».",
+                ),
+                Explanation(
+                    rule="With modal verbs (können, müssen, wollen, dürfen, sollen, mögen), the infinitive of the main verb always goes to the end of the sentence. Likewise, the prefix of separable verbs (einkaufen, aufstehen, anrufen…) detaches and moves to the end in a main clause: einkaufen → «Wir kaufen … ein».",
+                    why="The conjugated verb stays in second position (as in the first chapter) while the «heavy» part of the meaning moves to the end - this creates the so-called verb bracket, a frame that German uses more and more as sentences grow longer. Learning to «feel» this frame now makes long sentences much easier to read later.",
+                    history="English has a related phenomenon, historically connected: phrasal verbs like «stand up», «give in», «look up» come from the same Germanic particle-verb origin as German's separable prefixes. The difference is that German turned this into a systematic rule of main-clause structure, not just a lexical habit.",
+                    tip="A common mistake is forgetting the separable prefix at the end of the sentence, leaving only «Wir kaufen am Samstag» (incomplete). Always check that the prefix made it to the end: «Wir kaufen am Samstag ein».",
+                ),
+                Explanation(
+                    rule="Con los verbos modales (können, müssen, wollen, dürfen, sollen, mögen), el infinitivo del verbo principal va siempre al final de la frase. Del mismo modo, el prefijo de los verbos separables (einkaufen, aufstehen, anrufen…) se separa y va al final en la oración principal: einkaufen → «Wir kaufen … ein».",
+                    why="El verbo conjugado permanece en segunda posición (como en el primer capítulo) mientras la parte «pesada» del significado se desplaza al final: esto crea el llamado marco verbal, que el alemán usa cada vez más a medida que las frases se alargan. Aprender a «sentir» este marco desde ahora facilita mucho leer frases largas más adelante.",
+                    history="El español no tiene un fenómeno idéntico, pero el inglés sí guarda uno emparentado históricamente: los phrasal verbs como «stand up», «give in», «look up» vienen del mismo origen germánico que los prefijos separables alemanes. La diferencia es que el alemán convirtió esto en una regla sistemática, no solo en un hábito léxico.",
+                    tip="Error común: olvidar el prefijo separable al final de la frase, dejando solo «Wir kaufen am Samstag» (incompleto). Comprueba siempre que el prefijo haya llegado al final: «Wir kaufen am Samstag ein».",
+                ),
+                Explanation(
+                    rule="Modal fiillerle (können, müssen, wollen, dürfen, sollen, mögen) asıl fiilin mastarı her zaman cümlenin sonuna gider. Aynı şekilde, ayrılabilen fiillerin (einkaufen, aufstehen, anrufen…) öneki ana cümlede ayrılır ve sona gider: einkaufen → «Wir kaufen … ein».",
+                    why="Çekimli fiil ikinci sırada kalırken (ilk bölümde gördüğün gibi) anlamın «ağır» kısmı sona taşınır: bu, cümleler uzadıkça Almancanın giderek daha sık kullanacağı bir fiil parantezi/çerçeve yapı oluşturur. Bu çerçeveyi şimdiden «hissetmeyi» öğrenmek, uzun cümleleri okumayı çok kolaylaştırır.",
+                    history="İngilizcede de tarihsel olarak akraba bir olgu vardır: «stand up», «give in», «look up» gibi phrasal verb'ler, Almancanın ayrılabilen önekleriyle aynı Germen parçacık-fiil kökeninden gelir. Fark şu ki Almanca bunu sistematik bir kural hâline getirmiştir.",
+                    tip="Sık yapılan hata, ayrılabilen öneki cümle sonunda unutmaktır; «Wir kaufen am Samstag» (eksik) kalır. Önekin sona ulaştığından her zaman emin ol: «Wir kaufen am Samstag ein».",
+                ),
+                ("Ich kann heute kommen.", "Wir kaufen am Samstag ein."),
+            ),
+            Topic(
+                "6 · Tempo, numeri e routine",
+                Explanation(
+                    rule="L'unità A1 si chiude con orari, date, numeri, acquisti e routine quotidiana: qui non ci sono nuove regole grammaticali, ma vocabolario pratico da automatizzare. I numeri composti si dicono «unità-e-decina» (einundzwanzig = uno-e-venti); l'ora si esprime spesso con Viertel (quarto) e halb (mezza, riferita alla mezz'ora prima dell'ora indicata).",
+                    why="Automatizzare orari, prezzi e date è ciò che permette di gestire in tempo reale conversazioni pratiche (un appuntamento, un acquisto) senza doverle tradurre parola per parola. Conviene ripetere ad alta voce numeri, appuntamenti e prezzi dentro mini-scenari invece di studiare liste isolate: si ricorda meglio ciò che si è «usato» in un contesto.",
+                    history="La costruzione einundzwanzig («uno e venti») riflette un ordine più antico, comune a tutte le lingue germaniche: anche l'inglese diceva un tempo «four-and-twenty» (come nella filastrocca «four-and-twenty blackbirds»), prima di regolarizzarsi in «twenty-four». Tedesco e olandese hanno conservato l'ordine arcaico fino a oggi.",
+                    tip="Attenzione a halb: «halb acht» non significa «le otto e mezza» come si potrebbe pensare per analogia con l'italiano, ma «le sette e mezza» (mezza verso le otto). È l'errore più comune di chi impara il tedesco partendo dall'italiano.",
+                ),
+                Explanation(
+                    rule="The A1 unit closes with times, dates, numbers, shopping and daily routine: there's no new grammar rule here, just practical vocabulary to make automatic. Compound numbers are said «unit-and-ten» (einundzwanzig = one-and-twenty), and time is often expressed with Viertel (quarter) and halb (half, referring to the half-hour before the stated hour).",
+                    why="Making times, prices and dates automatic is what lets you handle real-time practical conversations (an appointment, a purchase) without mentally translating word by word. It helps to say numbers, appointments and prices aloud inside mini-scenarios rather than studying isolated lists - the brain remembers what it has actually «used» in context far better.",
+                    history="The construction einundzwanzig («one-and-twenty») reflects an older order shared by all Germanic languages: English used to say «four-and-twenty» too (as in the nursery rhyme «four-and-twenty blackbirds»), before regularising to «twenty-four». German and Dutch kept the older, archaic order right up to today.",
+                    tip="Watch out for halb: «halb acht» doesn't mean «half past eight» as one might assume - it means «half past seven» (halfway towards eight). This is one of the most common mistakes for learners of German.",
+                ),
+                Explanation(
+                    rule="La unidad A1 se cierra con horas, fechas, números, compras y rutina diaria: aquí no hay ninguna regla gramatical nueva, sino vocabulario práctico que hay que automatizar. Los números compuestos se dicen «unidad-y-decena» (einundzwanzig = uno-y-veinte), y la hora se expresa a menudo con Viertel (cuarto) y halb (media, referida a la media hora antes de la hora indicada).",
+                    why="Automatizar horas, precios y fechas es lo que permite gestionar en tiempo real conversaciones prácticas (una cita, una compra) sin traducirlas mentalmente palabra por palabra. Conviene repetir en voz alta números, citas y precios dentro de miniescenarios en vez de estudiar listas sueltas: el cerebro recuerda mejor lo que ha «usado» en un contexto.",
+                    history="La construcción einundzwanzig («uno y veinte») refleja un orden más antiguo, común a todas las lenguas germánicas: el inglés también decía antes «four-and-twenty» (como en la canción infantil «four-and-twenty blackbirds»), antes de regularizarse a «twenty-four». El alemán y el neerlandés conservaron ese orden arcaico hasta hoy.",
+                    tip="Cuidado con halb: «halb acht» no significa «las ocho y media» como podría pensarse por analogía con el español, sino «las siete y media» (media hacia las ocho). Es el error más frecuente de quien aprende alemán desde una lengua románica.",
+                ),
+                Explanation(
+                    rule="A1 birimi saatler, tarihler, sayılar, alışveriş ve günlük rutinle kapanır: burada yeni bir dil bilgisi kuralı yok, yalnızca otomatikleştirilmesi gereken pratik bir söz varlığı var. Bileşik sayılar «birlik-ve-onluk» şeklinde söylenir (einundzwanzig = bir-ve-yirmi); saat ise Viertel (çeyrek) ve halb (yarım, belirtilen saatten önceki yarım saati ifade eder) ile anlatılır.",
+                    why="Saatleri, fiyatları ve tarihleri otomatikleştirmek, pratik konuşmaları kelime kelime çevirmeden anlık olarak yönetebilmeni sağlar. Sayıları, randevuları ve fiyatları izole listeler yerine küçük senaryolar içinde sesli tekrar etmek daha etkilidir: beyin, bir bağlamda «kullandığı» şeyi çok daha iyi hatırlar.",
+                    history="einundzwanzig («bir ve yirmi») yapısı, tüm Germen dillerinde ortak olan daha eski bir düzeni yansıtır: İngilizce de eskiden «four-and-twenty» derdi, sonra «twenty-four»e düzenlileşti. Almanca ve Felemenkçe ise bu eski düzeni günümüze kadar korumuştur.",
+                    tip="halb'e dikkat: «halb acht», sekiz buçuk değil, yedi buçuk anlamına gelir (sekize doğru yarım). Bu, Almanca öğrenenlerin en sık yaptığı hatalardan biridir.",
+                ),
+                ("Es ist Viertel nach acht.", "Der Termin ist am Montag."),
+            ),
         ],
     },
     "A2": {
@@ -308,12 +545,174 @@ COURSES: dict[str, dict] = {
         "title": {"it": "Autonomia nelle situazioni note", "en": "Independence in familiar situations", "es": "Autonomía en situaciones conocidas", "tr": "Bilinen durumlarda bağımsızlık"},
         "can": {"it": "Raccontare esperienze, orientarti, descrivere persone e lavorare con situazioni quotidiane.", "en": "Report experiences, find your way, describe people and handle routine situations.", "es": "Contar experiencias, orientarte, describir personas y manejar situaciones cotidianas.", "tr": "Deneyimleri anlatmak, yön bulmak, insanları betimlemek ve rutin durumları yönetmek."},
         "topics": [
-            Topic("1 · Perfekt e biografia", "Il Perfekt unisce ausiliare e Partizip II. Costruisci una linea del tempo personale: ieri, la settimana scorsa, un viaggio, un imprevisto.", "The Perfekt combines an auxiliary and a past participle. Use a personal timeline to distinguish events and choose haben or sein.", "El Perfekt combina auxiliar y participio. Usa una línea temporal personal para elegir haben o sein y contar hechos.", "Perfekt, yardımcı fiil ve Partizip II'yi birleştirir. Kişisel zaman çizelgesiyle haben/sein seçimini çalışın.", ("Ich habe lange gearbeitet.", "Wir sind nach Berlin gefahren.")),
-            Topic("2 · Dativo e accusativo", "Il caso dipende dalla funzione o dalla preposizione, non dalla traduzione italiana. Prima riconosci: chi riceve? che cosa? Poi scegli articolo e pronome.", "Case follows function or preposition, not a word-for-word translation. Ask who receives something and what is transferred before choosing the article.", "El caso depende de la función o de la preposición, no de una traducción literal. Identifica primero receptor y objeto.", "Hâl, bire bir çeviriye değil işleve veya edata bağlıdır. Önce alıcıyı ve aktarılan şeyi belirleyin.", ("Ich gebe dem Kind den Ball.", "Das Geschenk ist für meinen Bruder.")),
-            Topic("3 · Spazio e movimento", "Le Wechselpräpositionen separano Wo? (dativo) e Wohin? (accusativo). Disegna una stanza o un'officina: posiziona, sposta e descrivi oggetti.", "Two-way prepositions distinguish location (Wo? + dative) from direction (Wohin? + accusative). Map a room or workshop and narrate movements.", "Las preposiciones mixtas distinguen ubicación (Wo? + dativo) y dirección (Wohin? + acusativo). Describe y mueve objetos en un plano.", "Çift yönlü edatlar konum (Wo? + dativ) ile yönü (Wohin? + akk.) ayırır. Bir oda planında nesneleri yerleştirin ve taşıyın.", ("Das Werkzeug liegt auf dem Tisch.", "Ich lege das Werkzeug auf den Tisch.")),
-            Topic("4 · Confrontare e motivare", "Comparativo, superlativo e connettori semplici permettono di scegliere, consigliare e descrivere vantaggi. Collega sempre il confronto a una ragione concreta.", "Comparatives, superlatives and simple connectors let you choose, recommend and weigh advantages. Attach every comparison to a concrete reason.", "Comparativos, superlativos y conectores sencillos permiten elegir y recomendar. Une cada comparación a una razón concreta.", "Karşılaştırma, üstünlük ve basit bağlaçlarla seçim ve öneri yapabilirsiniz. Her karşılaştırmayı somut bir nedene bağlayın.", ("Das Auto ist schneller als der Bus.", "Heute ist es am kältesten.")),
-            Topic("5 · Frasi dipendenti introduttive", "weil, dass e wenn preparano l'ordine con verbo finale. A2 non richiede periodi lunghi: richiede frasi brevi ma ordinate e comprensibili.", "weil, dass and wenn introduce final-verb order. At A2, aim for short, correctly ordered clauses rather than ornate long sentences.", "weil, dass y wenn introducen el verbo al final. En A2 importa hacer subordinadas breves, ordenadas y claras.", "weil, dass ve wenn fiili sona taşır. A2'de uzun cümlelerden önce kısa ve düzenli yan cümleler kurun.", ("Ich bleibe zu Hause, weil ich krank bin.", "Ich weiß, dass er kommt.")),
-            Topic("6 · Servizi, lavoro e salute", "Telefonate, appuntamenti, farmacia, lavoro e casa diventano scenari. Il lessico professionale entra sempre insieme alla cortesia: richiesta, chiarimento, conferma.", "Appointments, calls, pharmacy, work and housing become practical scenarios. Professional vocabulary always travels with polite requests, clarification and confirmation.", "Citas, llamadas, farmacia, trabajo y vivienda se convierten en escenarios. El vocabulario profesional va unido a petición, aclaración y confirmación.", "Randevular, telefonlar, eczane, iş ve konut pratik senaryolardır. Meslekî kelime dağarcığı rica, açıklama ve teyitle birlikte öğrenilir.", ("Könnten Sie das bitte wiederholen?", "Ich brauche einen Termin beim Arzt.")),
+            Topic(
+                "1 · Perfekt e biografia",
+                Explanation(
+                    rule="Il Perfekt racconta il passato nella lingua parlata e informale: si forma con l'ausiliare (haben o sein) coniugato al presente più il Partizip II del verbo principale, che va alla fine della frase. sein si usa con i verbi di movimento o cambiamento di stato (gehen, fahren, werden…); haben con quasi tutti gli altri.",
+                    why="Distinguere haben da sein non è arbitrario: sein segnala che il soggetto si è spostato o è cambiato (sono andato, sono diventato), mentre haben segnala un'azione compiuta su qualcosa (ho lavorato, ho mangiato). Riconoscere questa differenza aiuta a scegliere l'ausiliare giusto anche con verbi mai visti prima.",
+                    history="Il Perfekt nasce come costruzione risultativa (avere qualcosa in uno stato compiuto) che nel tedesco parlato, specialmente nelle varietà del sud e in austriaco/svizzero, ha quasi sostituito il Präteritum (il passato semplice): è il fenomeno noto come Präteritumschwund. La divisione haben/sein ha un parallelo storico anche in italiano (essere/avere).",
+                    tip="Errore frequente: usare sempre haben per abitudine dall'italiano. Controlla sempre se il verbo indica movimento o cambiamento di stato (gehen, kommen, werden, sterben, bleiben…): in quel caso serve sein, anche se in italiano useresti «avere».",
+                ),
+                Explanation(
+                    rule="The Perfekt tells the past in spoken and informal German: it's built with an auxiliary (haben or sein) conjugated in the present, plus the Partizip II of the main verb, which goes to the end of the sentence. sein is used with verbs of movement or change of state (gehen, fahren, werden…); haben with almost everything else.",
+                    why="Choosing haben vs sein isn't arbitrary: sein signals that the subject moved or changed (I have gone, I have become), while haben signals an action performed on something (I have worked, I have eaten). Recognising this difference helps you pick the right auxiliary even for unfamiliar verbs.",
+                    history="The Perfekt began as a resultative construction (having something in a completed state) that, in spoken German - especially southern, Austrian and Swiss varieties - has almost entirely replaced the Präteritum (simple past), a development known as Präteritumschwund. The haben/sein split has a historical parallel in Italian (essere/avere) and older English ('I am come').",
+                    tip="A common mistake is defaulting to haben out of habit. Always check whether the verb shows movement or change of state (gehen, kommen, werden, sterben, bleiben…): in that case you need sein, even where your own language would use «have».",
+                ),
+                Explanation(
+                    rule="El Perfekt narra el pasado en el alemán hablado e informal: se forma con un auxiliar (haben o sein) conjugado en presente más el Partizip II del verbo principal, que va al final de la frase. sein se usa con verbos de movimiento o cambio de estado (gehen, fahren, werden…); haben con casi todos los demás.",
+                    why="Elegir haben o sein no es arbitrario: sein indica que el sujeto se desplazó o cambió (he ido, me he vuelto), mientras que haben indica una acción realizada sobre algo (he trabajado, he comido). Reconocer esta diferencia ayuda a elegir el auxiliar correcto incluso con verbos nuevos.",
+                    history="El Perfekt nace como construcción resultativa (tener algo en un estado terminado) que en el alemán hablado, sobre todo en el sur, en Austria y en Suiza, ha sustituido casi por completo al Präteritum (pasado simple): es el fenómeno llamado Präteritumschwund. La división haben/sein tiene un paralelo histórico en el propio español y en el francés antiguo.",
+                    tip="Error frecuente: usar siempre haben por costumbre. Comprueba siempre si el verbo indica movimiento o cambio de estado (gehen, kommen, werden, sterben, bleiben…): en ese caso hace falta sein, aunque en español uses «haber».",
+                ),
+                Explanation(
+                    rule="Perfekt, konuşma dilinde ve gündelik Almancada geçmişi anlatır: şimdiki zamanda çekimlenmiş bir yardımcı fiil (haben ya da sein) artı cümle sonuna giden asıl fiilin Partizip II biçimiyle kurulur. sein, hareket veya durum değişikliği bildiren fiillerle (gehen, fahren, werden…) kullanılır; haben ise neredeyse geri kalan her şeyle.",
+                    why="haben ile sein arasında seçim rastgele değildir: sein öznenin yer değiştirdiğini ya da değiştiğini gösterir (gittim, oldum), haben ise bir şey üzerinde yapılan eylemi gösterir (çalıştım, yedim). Bu farkı görmek, hiç karşılaşmadığın fiillerde bile doğru yardımcı fiili seçmeni sağlar.",
+                    history="Perfekt, tamamlanmış bir duruma sahip olma anlamına gelen sonuçsal bir yapı olarak doğmuş, konuşma dilinde -özellikle güney Almanca, Avusturya ve İsviçre Almancasında- Präteritum'un yerini neredeyse tamamen almıştır; buna Präteritumschwund denir. haben/sein ayrımının tarihsel bir benzeri İtalyanca ve eski Fransızcada da vardır.",
+                    tip="Sık yapılan hata, alışkanlıkla her zaman haben kullanmaktır. Fiilin hareket ya da durum değişikliği bildirip bildirmediğini her zaman kontrol et (gehen, kommen, werden, sterben, bleiben…): bu durumda kendi dilinde «sahip olmak» desen bile sein gerekir.",
+                ),
+                ("Ich habe lange gearbeitet.", "Wir sind nach Berlin gefahren."),
+            ),
+            Topic(
+                "2 · Dativo e accusativo",
+                Explanation(
+                    rule="Il caso di un sostantivo dipende dalla funzione grammaticale o dalla preposizione che lo regge, non dalla traduzione italiana. Prima individua chi riceve l'azione (dativo, di solito una persona) e che cosa viene trasferito (accusativo); poi scegli articolo e pronome di conseguenza.",
+                    why="In italiano l'ordine delle parole basta a capire chi fa cosa a chi; in tedesco è il caso a farlo, quindi puoi anche invertire l'ordine (dem Kind gebe ich den Ball) senza cambiare il senso. Per questo conviene chiedersi «chi riceve?» prima di tradurre parola per parola.",
+                    history="Dativo e accusativo derivano entrambi dal sistema dei casi del proto-indoeuropeo (vedi anche l'accusativo di A1): la novità di A2 è che qui il caso dipende anche da singole preposizioni (mit, bei, für, ohne…) che impongono sempre lo stesso caso, un meccanismo molto simile a quello del latino.",
+                    tip="Non tradurre parola per parola le preposizioni italiane: für regge sempre l'accusativo, mit sempre il dativo, indipendentemente da come tradurresti la frase. Impara la preposizione insieme al suo caso, come un'unica unità.",
+                ),
+                Explanation(
+                    rule="The case of a noun depends on its grammatical function or on the preposition governing it, not on a word-for-word translation. First identify who receives the action (dative, usually a person) and what is being transferred (accusative); then choose the article and pronoun accordingly.",
+                    why="In English, word order alone usually shows who does what to whom; in German it's the case that does this job, so you can even reverse the order (dem Kind gebe ich den Ball) without changing the meaning. That's why it helps to ask «who receives this?» before translating literally.",
+                    history="Dative and accusative both descend from the Proto-Indo-European case system (see also the accusative in A1); what's new at A2 is that case here also depends on specific prepositions (mit, bei, für, ohne…) that always demand the same case - a lexical-government mechanism very similar to Latin.",
+                    tip="Don't translate prepositions word for word: für always takes the accusative, mit always the dative, regardless of how you'd phrase it in English. Learn each preposition together with its case, as a single unit.",
+                ),
+                Explanation(
+                    rule="El caso de un sustantivo depende de su función gramatical o de la preposición que lo rige, no de una traducción literal. Primero identifica quién recibe la acción (dativo, normalmente una persona) y qué se transfiere (acusativo); luego elige artículo y pronombre en consecuencia.",
+                    why="En español el orden de las palabras suele bastar para saber quién hace qué a quién; en alemán es el caso el que cumple esa función, así que incluso puedes invertir el orden (dem Kind gebe ich den Ball) sin cambiar el sentido. Por eso conviene preguntarse '¿quién recibe esto?' antes de traducir palabra por palabra.",
+                    history="El dativo y el acusativo derivan ambos del sistema de casos protoindoeuropeo (véase también el acusativo de A1); la novedad de A2 es que el caso también depende de preposiciones concretas (mit, bei, für, ohne…) que exigen siempre el mismo caso, un mecanismo muy parecido al del latín.",
+                    tip="No traduzcas las preposiciones palabra por palabra: für rige siempre acusativo, mit siempre dativo, sin importar cómo lo dirías en español. Aprende cada preposición junto con su caso, como una sola unidad.",
+                ),
+                Explanation(
+                    rule="Bir ismin hâli, birebir çeviriye değil dilbilgisel işleve veya onu yöneten edata bağlıdır. Önce eylemi kimin aldığını (dativ, genelde bir kişi) ve neyin aktarıldığını (akkusativ) belirle; sonra artikeli ve zamiri buna göre seç.",
+                    why="Türkçede kim kime ne yaptığını genelde ek ve sıralama gösterir; Almancada bunu hâl yapar, bu yüzden sırayı bile tersine çevirebilirsin (dem Kind gebe ich den Ball) ve anlam değişmez. Bu yüzden birebir çevirmeden önce «bunu kim alıyor?» diye sormak işe yarar.",
+                    history="Dativ ve akkusativ, ikisi de Proto-Hint-Avrupa hâl sisteminden gelir (A1'deki akkusativ'e de bakın); A2'deki yenilik, hâlin her zaman aynı hâli isteyen belirli edatlara (mit, bei, für, ohne…) da bağlı olmasıdır - Latinceye çok benzeyen sözcüksel bir mekanizma.",
+                    tip="Edatları birebir çevirme: für her zaman akkusativ, mit her zaman dativ ister, kendi dilinde nasıl söylediğinden bağımsız olarak. Her edatı hâliyle birlikte, tek bir birim olarak öğren.",
+                ),
+                ("Ich gebe dem Kind den Ball.", "Das Geschenk ist für meinen Bruder."),
+            ),
+            Topic(
+                "3 · Spazio e movimento",
+                Explanation(
+                    rule="Le preposizioni a doppio uso (Wechselpräpositionen: in, an, auf, über, unter, vor, hinter, neben, zwischen) reggono il dativo quando rispondono a Wo? (stato) e l'accusativo quando rispondono a Wohin? (direzione).",
+                    why="Questa alternanza permette al tedesco di distinguere con una sola preposizione due significati diversi (stare fermo vs muoversi verso) senza bisogno di verbi diversi: legen (mettere) vs liegen (stare disteso) ne è l'esempio più chiaro.",
+                    history="Questa distinzione stato/direzione tramite il caso ha un parallelo diretto nel latino classico, che usava «in + ablativo» per il luogo e «in + accusativo» per la direzione — esattamente lo stesso meccanismo del tedesco, con un'altra coppia di casi.",
+                    tip="Non confondere liegen/legen, stehen/stellen, sitzen/setzen: la coppia con vocale diversa segnala stato (dativo) vs movimento (accusativo). «Das Buch liegt auf dem Tisch» è diverso da «Ich lege das Buch auf den Tisch».",
+                ),
+                Explanation(
+                    rule="Two-way prepositions (Wechselpräpositionen: in, an, auf, über, unter, vor, hinter, neben, zwischen) take the dative when they answer Wo? (a state) and the accusative when they answer Wohin? (a direction).",
+                    why="This alternation lets German distinguish two different meanings (staying still vs. moving towards) with a single preposition - legen (to lay) vs liegen (to lie) is the clearest example.",
+                    history="This state/direction distinction marked through case has a direct parallel in Classical Latin, which used «in + ablative» for location and «in + accusative» for direction - exactly the same mechanism as German, with a different case pair.",
+                    tip="Don't confuse liegen/legen, stehen/stellen, sitzen/setzen: the pair with the different vowel marks state (dative) vs movement (accusative). «Das Buch liegt auf dem Tisch» differs from «Ich lege das Buch auf den Tisch».",
+                ),
+                Explanation(
+                    rule="Las preposiciones de doble uso (Wechselpräpositionen: in, an, auf, über, unter, vor, hinter, neben, zwischen) rigen dativo cuando responden a Wo? (un estado) y acusativo cuando responden a Wohin? (una dirección).",
+                    why="Esta alternancia permite al alemán distinguir dos significados distintos (estar quieto frente a moverse hacia) con una sola preposición: legen (poner) frente a liegen (estar tumbado) es el ejemplo más claro.",
+                    history="Esta distinción entre estado y dirección mediante el caso tiene un paralelo directo en el latín clásico, que usaba «in + ablativo» para el lugar e «in + acusativo» para la dirección: el mismo mecanismo que el alemán, con otro par de casos.",
+                    tip="No confundas liegen/legen, stehen/stellen, sitzen/setzen: el par con la vocal distinta marca estado (dativo) frente a movimiento (acusativo). «Das Buch liegt auf dem Tisch» es distinto de «Ich lege das Buch auf den Tisch».",
+                ),
+                Explanation(
+                    rule="Çift yönlü edatlar (Wechselpräpositionen: in, an, auf, über, unter, vor, hinter, neben, zwischen), Wo? (durum) sorusuna cevap verdiklerinde dativ, Wohin? (yön) sorusuna cevap verdiklerinde akkusativ alır.",
+                    why="Bu değişim, Almancanın tek bir edatla iki farklı anlamı (sabit durmak / hareket etmek) ayırt etmesini sağlar: legen (koymak) ile liegen (yatmak) en açık örnektir.",
+                    history="Hâl yoluyla yapılan bu durum/yön ayrımının klasik Latincede doğrudan bir benzeri vardır: yer için «in + ablatif», yön için «in + akkusativ» kullanılırdı - Almancadaki mekanizmanın aynısı, başka bir hâl çiftiyle.",
+                    tip="liegen/legen, stehen/stellen, sitzen/setzen'i karıştırma: farklı ünlüye sahip çift, durumu (dativ) ile hareketi (akkusativ) ayırt eder. «Das Buch liegt auf dem Tisch» ile «Ich lege das Buch auf den Tisch» farklıdır.",
+                ),
+                ("Das Werkzeug liegt auf dem Tisch.", "Ich lege das Werkzeug auf den Tisch."),
+            ),
+            Topic(
+                "4 · Confrontare e motivare",
+                Explanation(
+                    rule="Il comparativo si forma aggiungendo -er all'aggettivo (schnell → schneller) e usando als per «di/che»; il superlativo usa am + aggettivo + -sten (am schnellsten). Alcuni aggettivi frequenti sono irregolari (gut → besser → am besten).",
+                    why="Confrontare e motivare richiede di collegare sempre il paragone a una ragione concreta: questo è ciò che rende un confronto utile in una conversazione reale, non solo un esercizio grammaticale.",
+                    history="Il suffisso comparativo -er e quello superlativo -(e)st risalgono a suffissi molto antichi del proto-germanico, conservati quasi identici in inglese (schneller/faster, schnellst/fastest): uno dei punti in cui tedesco e inglese restano più vicini.",
+                    tip="Attenzione agli aggettivi irregolari più comuni: gut/besser/am besten, viel/mehr/am meisten, gern/lieber/am liebsten. Non provare a costruirli regolarmente con -er: vanno memorizzati.",
+                ),
+                Explanation(
+                    rule="The comparative is formed by adding -er to the adjective (schnell → schneller) and using als for 'than'; the superlative uses am + adjective + -sten (am schnellsten). Some frequent adjectives are irregular (gut → besser → am besten).",
+                    why="Comparing and giving reasons means always attaching the comparison to a concrete reason: that's what makes a comparison useful in a real conversation, not just a grammar drill.",
+                    history="The comparative suffix -er and superlative -(e)st go back to very old Proto-Germanic suffixes, preserved almost identically in English (schneller/faster, schnellst/fastest): one of the points where German and English stay closest.",
+                    tip="Watch out for the most common irregular adjectives: gut/besser/am besten, viel/mehr/am meisten, gern/lieber/am liebsten. Don't try to build them with -er: they must be memorised.",
+                ),
+                Explanation(
+                    rule="El comparativo se forma añadiendo -er al adjetivo (schnell → schneller) y usando als para 'que'; el superlativo usa am + adjetivo + -sten (am schnellsten). Algunos adjetivos frecuentes son irregulares (gut → besser → am besten).",
+                    why="Comparar y justificar significa unir siempre la comparación a una razón concreta: eso es lo que hace útil una comparación en una conversación real, no solo un ejercicio gramatical.",
+                    history="El sufijo comparativo -er y el superlativo -(e)st se remontan a sufijos muy antiguos del protogermánico, conservados casi idénticos en inglés (schneller/faster, schnellst/fastest): uno de los puntos donde alemán e inglés quedan más cerca.",
+                    tip="Cuidado con los adjetivos irregulares más comunes: gut/besser/am besten, viel/mehr/am meisten, gern/lieber/am liebsten. No intentes formarlos con -er: hay que memorizarlos.",
+                ),
+                Explanation(
+                    rule="Karşılaştırma sıfata -er eklenerek (schnell → schneller) ve 'den/dan' için als kullanılarak kurulur; üstünlük derecesi am + sıfat + -sten (am schnellsten) ile yapılır. Bazı sık kullanılan sıfatlar düzensizdir (gut → besser → am besten).",
+                    why="Karşılaştırma ve gerekçelendirme, karşılaştırmayı her zaman somut bir nedene bağlamayı gerektirir: gerçek bir konuşmada bir karşılaştırmayı yararlı kılan budur, sadece bir alıştırma değil.",
+                    history="Karşılaştırma eki -er ve üstünlük eki -(e)st, İngilizcede neredeyse aynı biçimde korunan (schneller/faster, schnellst/fastest) çok eski Proto-Germen eklerine dayanır: Almanca ve İngilizcenin birbirine en yakın kaldığı noktalardan biri.",
+                    tip="En yaygın düzensiz sıfatlara dikkat et: gut/besser/am besten, viel/mehr/am meisten, gern/lieber/am liebsten. Bunları -er ile düzenli kurmaya çalışma: ezberlenmeleri gerekir.",
+                ),
+                ("Das Auto ist schneller als der Bus.", "Heute ist es am kältesten."),
+            ),
+            Topic(
+                "5 · Frasi dipendenti introduttive",
+                Explanation(
+                    rule="weil (perché), dass (che) e wenn (se/quando) introducono una subordinata in cui il verbo va alla fine, non in seconda posizione. A2 non richiede periodi lunghi: bastano frasi brevi ma con l'ordine corretto.",
+                    why="Spostare il verbo alla fine segnala chiaramente che quella parte della frase dipende da un'altra: è un modo per il tedesco di marcare grammaticalmente, non solo con l'intonazione, che un'informazione è subordinata a un'altra.",
+                    history="Curiosamente, l'ordine verbo-finale nelle subordinate è il pattern più antico: proto-germanico e proto-indoeuropeo tendevano a mettere il verbo alla fine. È la frase principale tedesca (V2) a essere l'innovazione più recente; le subordinate hanno conservato l'ordine arcaico.",
+                    tip="Errore frequente: dimenticare di spostare il verbo alla fine dopo weil o dass. «Ich bleibe zu Hause, weil ich bin krank» è sbagliato; corretto è «weil ich krank bin».",
+                ),
+                Explanation(
+                    rule="weil (because), dass (that) and wenn (if/when) introduce a subordinate clause where the verb goes to the end, not into second position. At A2 you don't need long sentences: short clauses with the correct word order are enough.",
+                    why="Moving the verb to the end clearly signals that this part of the sentence depends on another: it's German's way of marking, grammatically and not just through intonation, that one piece of information is subordinate to another.",
+                    history="Interestingly, verb-final order in subordinate clauses is actually the older pattern: Proto-Germanic and Proto-Indo-European tended to place the verb at the end. It's the German main clause (V2) that is the more recent innovation; subordinate clauses kept the archaic order.",
+                    tip="A common mistake is forgetting to move the verb to the end after weil or dass. «Ich bleibe zu Hause, weil ich bin krank» is wrong; the correct form is «weil ich krank bin».",
+                ),
+                Explanation(
+                    rule="weil (porque), dass (que) y wenn (si/cuando) introducen una subordinada en la que el verbo va al final, no en segunda posición. En A2 no hacen falta frases largas: bastan subordinadas breves con el orden correcto.",
+                    why="Desplazar el verbo al final señala con claridad que esa parte de la frase depende de otra: es la manera que tiene el alemán de marcar gramaticalmente, no solo con la entonación, que una información es subordinada a otra.",
+                    history="Curiosamente, el orden verbo final en las subordinadas es el patrón más antiguo: protogermánico y protoindoeuropeo tendían a colocar el verbo al final. Es la oración principal alemana (V2) la que resulta la innovación más reciente.",
+                    tip="Error frecuente: olvidar mover el verbo al final después de weil o dass. «Ich bleibe zu Hause, weil ich bin krank» es incorrecto; lo correcto es «weil ich krank bin».",
+                ),
+                Explanation(
+                    rule="weil (çünkü), dass (ki/diye) ve wenn (eğer/-dığında), fiilin ikinci sırada değil sonda yer aldığı bir yan cümle başlatır. A2'de uzun cümlelere gerek yok: doğru sıralamayla kısa yan cümleler yeterlidir.",
+                    why="Fiili sona taşımak, cümlenin bu bölümünün başka bir bölüme bağlı olduğunu açıkça gösterir: bu, Almancanın bir bilginin başka birine bağlı olduğunu yalnızca tonlamayla değil, dilbilgisel olarak da işaretleme biçimidir.",
+                    history="İlginç biçimde, yan cümlelerdeki fiil-sonda düzeni aslında daha eski bir kalıptır: Proto-Germence ve Proto-Hint-Avrupa dili fiili sona koyma eğilimindeydi. Fiilin ikinci sırada olduğu (V2) Almanca ana cümle, daha yeni bir yeniliktir.",
+                    tip="Sık yapılan hata, weil ya da dass'tan sonra fiili sona taşımayı unutmaktır. «Ich bleibe zu Hause, weil ich bin krank» yanlıştır; doğrusu «weil ich krank bin»dir.",
+                ),
+                ("Ich bleibe zu Hause, weil ich krank bin.", "Ich weiß, dass er kommt."),
+            ),
+            Topic(
+                "6 · Servizi, lavoro e salute",
+                Explanation(
+                    rule="Telefonate, appuntamenti, farmacia, lavoro e casa diventano scenari pratici in cui il lessico professionale si combina con formule di cortesia: richiesta (Könnten Sie…?), chiarimento (Was bedeutet…?), conferma (Habe ich das richtig verstanden?).",
+                    why="In situazioni di servizio reali la cortesia non è un optional stilistico: è ciò che rende una richiesta accettabile. Per questo ogni scenario abbina sempre una funzione pratica a una forma cortese specifica, non solo al vocabolario dell'argomento.",
+                    history="La formula Könnten Sie…? usa già qui il Konjunktiv II (approfondito in B2): è un esempio di come il tedesco usi il condizionale per addolcire una richiesta diretta — lo stesso meccanismo di cortesia dell'italiano ('Potrebbe…?').",
+                    tip="Non limitarti al vocabolario isolato (Termin, Rezept, Bewerbung…): esercitati sempre dentro la formula di cortesia completa, perché è la combinazione delle due cose che serve in una conversazione reale.",
+                ),
+                Explanation(
+                    rule="Phone calls, appointments, the pharmacy, work and housing become practical scenarios where professional vocabulary always combines with polite formulas: a request (Könnten Sie…?), a clarification (Was bedeutet…?), a confirmation (Habe ich das richtig verstanden?).",
+                    why="In real service situations politeness isn't a stylistic extra: it's what makes a request acceptable. That's why every scenario pairs a practical function with a specific polite form, not just topic vocabulary.",
+                    history="The formula Könnten Sie…? already uses Konjunktiv II here (covered in depth at B2): German uses the conditional to soften a direct request - the same politeness mechanism many languages use with their own conditional ('Could you…?').",
+                    tip="Don't just learn isolated vocabulary (Termin, Rezept, Bewerbung…): always practise it inside the full polite formula, since it's the combination of both that you need in a real conversation.",
+                ),
+                Explanation(
+                    rule="Llamadas, citas, farmacia, trabajo y vivienda se convierten en escenarios prácticos donde el vocabulario profesional se combina con fórmulas de cortesía: pedir (Könnten Sie…?), aclarar (Was bedeutet…?), confirmar (Habe ich das richtig verstanden?).",
+                    why="En situaciones de servicio reales la cortesía no es un adorno: es lo que hace aceptable una petición. Por eso cada escenario combina una función práctica con una forma cortés concreta, no solo vocabulario del tema.",
+                    history="La fórmula Könnten Sie…? ya usa aquí el Konjunktiv II (profundizado en B2): el alemán usa el condicional para suavizar una petición directa, el mismo mecanismo de cortesía que el español usa con el condicional ('¿Podría…?').",
+                    tip="No te limites al vocabulario aislado (Termin, Rezept, Bewerbung…): practícalo siempre dentro de la fórmula de cortesía completa, porque es la combinación de ambas cosas lo que sirve en una conversación real.",
+                ),
+                Explanation(
+                    rule="Telefon görüşmeleri, randevular, eczane, iş ve konut, meslekî söz varlığının nezaket kalıplarıyla birleştiği pratik senaryolar hâline gelir: rica (Könnten Sie…?), açıklama (Was bedeutet…?), teyit (Habe ich das richtig verstanden?).",
+                    why="Gerçek hizmet durumlarında nezaket stilistik bir seçenek değildir: bir talebi kabul edilebilir kılan şeydir. Bu yüzden her senaryo pratik bir işlevi belirli bir nazik biçimle eşleştirir, yalnızca konu söz varlığıyla değil.",
+                    history="Könnten Sie…? kalıbı burada Konjunktiv II'yi (B2'de derinleştirilir) zaten kullanır: Almanca doğrudan bir talebi yumuşatmak için şart kipini kullanır - birçok dilin kendi şart kipiyle kullandığı aynı nezaket mekanizması.",
+                    tip="Sadece izole söz varlığını (Termin, Rezept, Bewerbung…) öğrenme: bunu her zaman tam nezaket kalıbı içinde çalış, çünkü gerçek bir konuşmada işe yarayan ikisinin birleşimidir.",
+                ),
+                ("Könnten Sie das bitte wiederholen?", "Ich brauche einen Termin beim Arzt."),
+            ),
         ],
     },
     "B1": {
@@ -321,12 +720,174 @@ COURSES: dict[str, dict] = {
         "title": {"it": "Argomentare, lavorare, partecipare", "en": "Argue, work and participate", "es": "Argumentar, trabajar, participar", "tr": "Tartışmak, çalışmak, katılmak"},
         "can": {"it": "Spiegare problemi, raccontare esperienze e comunicare con sicurezza in studio e lavoro.", "en": "Explain problems, report experience and communicate confidently at study and work.", "es": "Explicar problemas, relatar experiencias y comunicarte con seguridad en estudios y trabajo.", "tr": "Sorunları açıklamak, deneyim aktarmak ve eğitimle işte güvenle iletişim kurmak."},
         "topics": [
-            Topic("1 · Subordinate e coesione", "Le subordinate con weil, obwohl, während, damit e bevor rendono il testo logico. Pianifica la frase: connettore, soggetto, informazioni, verbo finale.", "Subordinate clauses with weil, obwohl, während, damit and bevor make a text logical. Plan connector, subject, information and final verb.", "Las subordinadas con weil, obwohl, während, damit y bevor cohesionan el texto. Planifica conector, sujeto, información y verbo final.", "weil, obwohl, während, damit ve bevor ile yan cümleler metni mantıklı kılar. Bağlaç, özne, bilgi, fiil son düzenini kurun.", ("Obwohl es regnet, fahre ich zur Arbeit.", "Ich lerne, damit ich die Prüfung bestehe.")),
-            Topic("2 · Passivo e processi", "Il passivo mette al centro un processo o un risultato: ideale per istruzioni, produzione, amministrazione e descrizioni tecniche. Distingui azione (werden) e stato (sein).", "The passive foregrounds a process or result—useful in instructions, production, administration and technical descriptions. Distinguish werden from sein.", "La pasiva centra proceso o resultado; es útil en instrucciones, producción y textos técnicos. Distingue werden y sein.", "Edilgen yapı süreç ya da sonucu öne çıkarır; talimatlar ve teknik metinler için uygundur. werden ile sein ayrımını kurun.", ("Das Gerät wird repariert.", "Das Gerät ist repariert.")),
-            Topic("3 · Relativi e precisione", "Le relative evitano ripetizioni e collegano informazioni. Il genere viene dal nome antecedente; il caso nasce dalla funzione interna della relativa.", "Relative clauses avoid repetition and connect information. Gender comes from the antecedent; case comes from the role inside the clause.", "Las relativas evitan repeticiones. El género viene del antecedente y el caso, de la función dentro de la relativa.", "İlgi cümleleri tekrarları önler. Cinsiyet öncül isimden, hâl ise ilgi cümlesindeki görevden gelir.", ("Das ist die Frau, die mir hilft.", "Der Mann, dem ich schreibe, arbeitet hier.")),
-            Topic("4 · Opinione e discussione", "Una risposta B1 efficace contiene tesi, ragione, esempio e possibile limite. Usa denn, deshalb, trotzdem, einerseits e andererseits con moderazione.", "An effective B1 contribution has a claim, reason, example and possible limitation. Use connectors to show the logic rather than decorate the sentence.", "Una intervención B1 incluye tesis, razón, ejemplo y posible límite. Los conectores deben mostrar la lógica.", "Etkili bir B1 katkısı görüş, neden, örnek ve olası sınır içerir. Bağlaçlar süs değil mantık için kullanılır.", ("Meiner Meinung nach ist das sinnvoll.", "Deshalb schlage ich eine andere Lösung vor.")),
-            Topic("5 · Bewerbung e lavoro", "Il modulo professionale tratta annuncio, Anschreiben, Lebenslauf, colloquio e comunicazione di squadra. Ogni testo deve essere concreto, verificabile e adatto al destinatario.", "The professional module covers job ads, cover letters, CVs, interviews and team communication. Make each text concrete, verifiable and audience-appropriate.", "El módulo profesional trabaja ofertas, carta, CV, entrevista y equipo. Todo texto debe ser concreto y adecuado al destinatario.", "Meslek modülü ilan, ön yazı, CV, görüşme ve ekip iletişimini kapsar. Her metin somut, doğrulanabilir ve muhataba uygun olmalıdır.", ("Ich bewerbe mich um die Stelle als …", "Im Anhang finden Sie meinen Lebenslauf.")),
-            Topic("6 · Strategie d'esame B1", "Allenati con lettura globale, dettagli mirati, e-mail formale e breve presentazione orale. Dopo ogni produzione, revisiona prima il verbo e poi connettori, casi e registro.", "Train global reading, targeted detail, formal email and a short oral presentation. Review verbs first, then connectors, case and register.", "Entrena lectura global, detalles, correo formal y presentación breve. Revisa primero verbos y después conectores, casos y registro.", "Genel okuma, hedefli ayrıntı, resmî e-posta ve kısa sunum çalışın. Önce fiilleri, sonra bağlaçları, hâlleri ve üslubu gözden geçirin.", ("Könnten wir einen Termin vereinbaren?", "Zusammenfassend möchte ich betonen, dass …")),
+            Topic(
+                "1 · Subordinate e coesione",
+                Explanation(
+                    rule="Le congiunzioni subordinanti di B1 (weil, obwohl, während, damit, bevor…) introducono frasi con il verbo alla fine, come già in A2, ma qui il loro ruolo diventa costruire testi coesi: ogni congiunzione segnala una relazione logica precisa (causa, concessione, contemporaneità, scopo, anteriorità).",
+                    why="Un testo B1 efficace non è solo grammaticalmente corretto: deve rendere espliciti i collegamenti logici tra le idee, così chi legge non deve indovinarli. Conviene pianificare la frase prima di scriverla: quale congiunzione? quale relazione voglio esprimere?",
+                    history="Molte di queste congiunzioni sono storicamente fusioni di elementi più antichi: obwohl nasce da ob + wohl, damit fonde da (avverbio pronominale) + mit («con ciò»). Questo pattern — fondere un avverbio pronominale con una preposizione — è molto produttivo in tedesco (vedi anche wodurch, wobei).",
+                    tip="Non confondere weil (causa) e obwohl (concessione): entrambe mandano il verbo alla fine, ma cambiano completamente la relazione logica. «Ich bin müde, weil ich gearbeitet habe» è diverso da «Ich arbeite, obwohl ich müde bin».",
+                ),
+                Explanation(
+                    rule="The B1 subordinating conjunctions (weil, obwohl, während, damit, bevor…) introduce clauses with the verb at the end, as at A2, but here their role becomes building cohesive texts: each conjunction signals a precise logical relationship (cause, concession, simultaneity, purpose, anteriority).",
+                    why="An effective B1 text isn't just grammatically correct: it must make the logical links between ideas explicit, so the reader doesn't have to guess them. It helps to plan the sentence before writing it: which conjunction? which relationship do I want to express?",
+                    history="Many of these conjunctions are historically fusions of older elements: obwohl comes from ob + wohl, damit fuses da (a pronominal adverb) + mit ('with that'). This pattern - fusing a pronominal adverb with a preposition - is very productive in German (see also wodurch, wobei).",
+                    tip="Don't confuse weil (cause) and obwohl (concession): both send the verb to the end, but they change the logical relationship completely. «Ich bin müde, weil ich gearbeitet habe» differs from «Ich arbeite, obwohl ich müde bin».",
+                ),
+                Explanation(
+                    rule="Las conjunciones subordinantes de B1 (weil, obwohl, während, damit, bevor…) introducen oraciones con el verbo al final, como en A2, pero aquí su papel es construir textos cohesionados: cada conjunción señala una relación lógica precisa (causa, concesión, simultaneidad, finalidad, anterioridad).",
+                    why="Un texto B1 eficaz no es solo gramaticalmente correcto: debe hacer explícitos los vínculos lógicos entre las ideas. Conviene planificar la frase antes de escribirla: ¿qué conjunción? ¿qué relación quiero expresar?",
+                    history="Muchas de estas conjunciones son históricamente fusiones de elementos más antiguos: obwohl nace de ob + wohl, damit fusiona da (adverbio pronominal) + mit ('con eso'). Este patrón es muy productivo en alemán (véase también wodurch, wobei).",
+                    tip="No confundas weil (causa) y obwohl (concesión): ambas mandan el verbo al final, pero cambian la relación lógica por completo. «Ich bin müde, weil ich gearbeitet habe» es distinto de «Ich arbeite, obwohl ich müde bin».",
+                ),
+                Explanation(
+                    rule="B1'in bağlaçları (weil, obwohl, während, damit, bevor…), A2'de olduğu gibi fiili sona taşıyan cümleler kurar, ama burada işlevleri bağdaşık metinler oluşturmaktır: her bağlaç kesin bir mantıksal ilişkiyi (neden, karşıtlık, eşzamanlılık, amaç, önce oluş) işaretler.",
+                    why="Etkili bir B1 metni sadece dilbilgisel doğru olmakla kalmaz: fikirler arasındaki mantıksal bağlantıları açık hâle getirmelidir. Cümleyi yazmadan önce planlamak işe yarar: hangi bağlaç? hangi ilişkiyi ifade etmek istiyorum?",
+                    history="Bu bağlaçların çoğu tarihsel olarak daha eski ögelerin kaynaşmasıdır: obwohl, ob + wohl'den doğar, damit ise da (zamirsi zarf) + mit'in kaynaşmasıdır. Bu kalıp Almancada çok üretkendir (wodurch, wobei'ye de bakın).",
+                    tip="weil (neden) ile obwohl'u (karşıtlık) karıştırma: ikisi de fiili sona gönderir, ama mantıksal ilişkiyi tamamen değiştirir. «Ich bin müde, weil ich gearbeitet habe» ile «Ich arbeite, obwohl ich müde bin» farklıdır.",
+                ),
+                ("Obwohl es regnet, fahre ich zur Arbeit.", "Ich lerne, damit ich die Prüfung bestehe."),
+            ),
+            Topic(
+                "2 · Passivo e processi",
+                Explanation(
+                    rule="Il Vorgangspassiv (passivo di processo) si forma con werden + Partizip II e descrive un'azione in corso (Das Gerät wird repariert = viene riparato, ora). Il Zustandspassiv (passivo di stato) si forma con sein + Partizip II e descrive il risultato già raggiunto (Das Gerät ist repariert = è riparato).",
+                    why="Questa distinzione è utile quando serve mettere al centro un processo o un risultato senza nominare chi lo compie: istruzioni, produzione, amministrazione. Scegliere werden o sein cambia il significato in modo netto.",
+                    history="Il werden-Passiv è una grammaticalizzazione relativamente più recente: werden significava «diventare», quindi «wird repariert» significa letteralmente «diventa riparato». Il sein-Passiv è più antico e semplice: un aggettivo participiale usato come predicato.",
+                    tip="Errore comune: usare sein-Passiv quando l'azione è ancora in corso. Se il tecnico sta ancora lavorando, serve wird repariert, non ist repariert (che implica lavoro già concluso).",
+                ),
+                Explanation(
+                    rule="The Vorgangspassiv (process passive) is formed with werden + Partizip II and describes an ongoing action (Das Gerät wird repariert = it is being repaired, now). The Zustandspassiv (state passive) is formed with sein + Partizip II and describes an already-reached result (Das Gerät ist repariert = it is repaired).",
+                    why="This distinction is useful whenever you need to foreground a process or result without naming who performs it: instructions, production, administration. Choosing werden or sein changes the meaning sharply.",
+                    history="The werden-passive is a relatively more recent grammaticalisation: werden meant 'to become', so 'wird repariert' literally means 'becomes repaired'. The sein-passive is older and simpler: a participial adjective used as a predicate.",
+                    tip="A common mistake is using sein-passive when the action is still in progress: if the technician is still working, you need wird repariert, not ist repariert (which implies the job is finished).",
+                ),
+                Explanation(
+                    rule="El Vorgangspassiv (pasiva de proceso) se forma con werden + Partizip II y describe una acción en curso (Das Gerät wird repariert = está siendo reparado, ahora). El Zustandspassiv (pasiva de estado) se forma con sein + Partizip II y describe un resultado ya alcanzado (Das Gerät ist repariert = está reparado).",
+                    why="Esta distinción es útil cuando hace falta poner en el centro un proceso o un resultado sin nombrar quién lo realiza: instrucciones, producción, administración. Elegir werden o sein cambia el significado con claridad.",
+                    history="La pasiva con werden es una gramaticalización relativamente más reciente: werden significaba 'llegar a ser', así que 'wird repariert' significa literalmente 'llega a estar reparado'. La pasiva con sein es más antigua y sencilla: un adjetivo participial usado como predicado.",
+                    tip="Error común: usar la pasiva con sein cuando la acción todavía está en curso. Si el técnico sigue trabajando, hace falta wird repariert, no ist repariert (que implica que el trabajo ya terminó).",
+                ),
+                Explanation(
+                    rule="Vorgangspassiv (süreç edilgeni), werden + Partizip II ile kurulur ve devam eden bir eylemi anlatır (Das Gerät wird repariert = şu anda tamir ediliyor). Zustandspassiv (durum edilgeni) ise sein + Partizip II ile kurulur ve ulaşılmış bir sonucu anlatır (Das Gerät ist repariert = tamir edilmiş durumda).",
+                    why="Bu ayrım, kimin yaptığını belirtmeden bir süreci ya da sonucu öne çıkarmak gerektiğinde işe yarar: talimatlar, üretim, idari metinler. werden ya da sein seçimi anlamı keskin biçimde değiştirir.",
+                    history="werden-edilgeni nispeten daha yeni bir dilbilgiselleşmedir: werden 'olmak' anlamındaydı, bu yüzden 'wird repariert' tam olarak 'tamir edilmiş hâline geliyor' demektir. sein-edilgeni daha eski ve basittir: yüklem olarak kullanılan bir partisip sıfat.",
+                    tip="Yaygın hata, eylem hâlâ devam ederken sein-edilgenini kullanmaktır: tamirci hâlâ çalışıyorsa wird repariert gerekir, ist repariert (işin bittiğini ima eder) değil.",
+                ),
+                ("Das Gerät wird repariert.", "Das Gerät ist repariert."),
+            ),
+            Topic(
+                "3 · Relativi e precisione",
+                Explanation(
+                    rule="Le frasi relative evitano ripetizioni collegando informazioni su un nome già menzionato. Il pronome relativo (der/die/das…) prende genere e numero dal nome a cui si riferisce (l'antecedente), ma il caso dalla funzione che ha dentro la frase relativa stessa.",
+                    why="Questo doppio criterio (genere/numero dall'esterno, caso dall'interno) richiede un piccolo calcolo mentale: guardare sia indietro (a chi ti riferisci) sia avanti (che ruolo ha in quella frase). Una volta automatizzato, permette frasi molto più precise senza ripetere il nome.",
+                    history="I pronomi relativi tedeschi derivano dal sistema dei dimostrativi/articoli (der/die/das) — un'evoluzione comune a molte lingue indoeuropee. Il tedesco lo mostra in modo trasparente, dato che le forme sono quasi identiche all'articolo determinativo.",
+                    tip="Errore tipico: assegnare il caso in base al primo verbo che viene in mente invece che al ruolo dentro la relativa. In «Der Mann, dem ich schreibe» il caso è dativo perché schreiben regge il dativo, non perché der Mann è maschile.",
+                ),
+                Explanation(
+                    rule="Relative clauses avoid repetition by attaching information to an already-mentioned noun. The relative pronoun (der/die/das…) takes its gender and number from the noun it refers to (the antecedent), but its case from the role it plays inside the relative clause itself.",
+                    why="This double criterion (gender/number from outside, case from inside) requires a small mental calculation: looking both backwards (who you're referring to) and forwards (what role they play). Once automatic, it lets you write much more precise sentences without repeating the noun.",
+                    history="German relative pronouns derive from the demonstrative/article system (der/die/das) - a development shared by many Indo-European languages. German shows this transparently, since the forms are almost identical to the definite article.",
+                    tip="The typical mistake is assigning the case based on the first verb that comes to mind, rather than the role inside the clause: in «Der Mann, dem ich schreibe» the case is dative because schreiben governs the dative, not because der Mann is masculine.",
+                ),
+                Explanation(
+                    rule="Las oraciones de relativo evitan repeticiones conectando información sobre un sustantivo ya mencionado. El pronombre relativo (der/die/das…) toma género y número del sustantivo al que se refiere (el antecedente), pero el caso de la función que cumple dentro de la propia relativa.",
+                    why="Este doble criterio (género/número desde fuera, caso desde dentro) exige un pequeño cálculo mental: mirar hacia atrás (a quién te refieres) y hacia delante (qué papel cumple). Una vez automatizado, permite frases mucho más precisas sin repetir el sustantivo.",
+                    history="Los pronombres relativos alemanes derivan del sistema de demostrativos/artículos (der/die/das): una evolución compartida por muchas lenguas indoeuropeas. El alemán lo muestra de forma transparente, ya que las formas son casi idénticas al artículo determinado.",
+                    tip="El error típico es asignar el caso según el primer verbo que viene a la mente, no según el papel dentro de la relativa: en «Der Mann, dem ich schreibe» el caso es dativo porque schreiben rige dativo, no porque der Mann sea masculino.",
+                ),
+                Explanation(
+                    rule="İlgi cümleleri, zaten adı geçmiş bir isme bilgi ekleyerek tekrarları önler. İlgi zamiri (der/die/das…) cinsiyetini ve sayısını atıfta bulunduğu isimden alır, ama hâlini ilgi cümlesinin içindeki rolünden alır.",
+                    why="Bu çifte ölçüt (dışarıdan cinsiyet/sayı, içeriden hâl) küçük bir zihinsel hesap gerektirir: hem geriye hem ileriye bakman gerekir. Otomatikleştiğinde, ismi tekrarlamadan çok daha kesin cümleler kurmanı sağlar.",
+                    history="Almanca ilgi zamirleri işaret sıfatı/artikel sisteminden (der/die/das) gelir - birçok Hint-Avrupa dilinde görülen bir gelişim. Almanca bunu şeffaf biçimde gösterir, çünkü biçimler belirli artikelle neredeyse özdeştir.",
+                    tip="Tipik hata, ilgi cümlesi içindeki role değil, akla ilk gelen fiile göre hâl belirlemektir: «Der Mann, dem ich schreibe» cümlesinde hâl dativdir, çünkü schreiben dativ ister, der Mann eril olduğu için değil.",
+                ),
+                ("Das ist die Frau, die mir hilft.", "Der Mann, dem ich schreibe, arbeitet hier."),
+            ),
+            Topic(
+                "4 · Opinione e discussione",
+                Explanation(
+                    rule="Una risposta B1 efficace segue una struttura: tesi, ragione, esempio e un possibile limite. Connettori come denn, deshalb, trotzdem, einerseits…andererseits collegano questi elementi in modo esplicito, senza esagerare nel loro numero.",
+                    why="I connettori non sono decorazione: ognuno corrisponde a una relazione logica precisa (denn = causa, deshalb = conseguenza, trotzdem = contrasto inatteso). Usarli con moderazione rende il discorso più chiaro; usarne troppi lo appesantisce.",
+                    history="denn (causale) e dann (temporale, «poi») derivano storicamente dalla stessa parola dell'alto tedesco antico (denne), poi separata in due forme e funzioni distinte — un classico caso di biforcazione storica.",
+                    tip="Non confondere denn (perché, verbo in seconda posizione) con weil (perché, verbo alla fine): «Ich bleibe, denn ich bin müde» e «Ich bleibe, weil ich müde bin» sono entrambe corrette ma con struttura diversa.",
+                ),
+                Explanation(
+                    rule="An effective B1 answer follows a structure: claim, reason, example and a possible limitation. Connectors like denn, deshalb, trotzdem, einerseits…andererseits link these elements explicitly, without overusing them.",
+                    why="Connectors aren't decoration: each corresponds to a precise logical relationship (denn = cause, deshalb = consequence, trotzdem = unexpected contrast). Using them sparingly makes speech clearer; too many weigh it down.",
+                    history="denn (causal) and dann (temporal, 'then') historically derive from the same Old High German word (denne), which later split into two forms and functions - a classic case of historical bifurcation.",
+                    tip="Don't confuse denn (because, verb in second position) with weil (because, verb at the end): «Ich bleibe, denn ich bin müde» and «Ich bleibe, weil ich müde bin» are both correct but structured differently.",
+                ),
+                Explanation(
+                    rule="Una respuesta B1 eficaz sigue una estructura: tesis, razón, ejemplo y un posible límite. Conectores como denn, deshalb, trotzdem, einerseits…andererseits unen estos elementos de forma explícita, sin usarlos en exceso.",
+                    why="Los conectores no son adorno: cada uno corresponde a una relación lógica precisa (denn = causa, deshalb = consecuencia, trotzdem = contraste inesperado). Usarlos con moderación aclara el discurso; demasiados lo recargan.",
+                    history="denn (causal) y dann (temporal, 'luego') derivan de la misma palabra del alto alemán antiguo (denne), separada después en dos formas y funciones: un caso clásico de bifurcación histórica.",
+                    tip="No confundas denn (porque, verbo en segunda posición) con weil (porque, verbo al final): «Ich bleibe, denn ich bin müde» y «Ich bleibe, weil ich müde bin» son ambas correctas pero con estructura distinta.",
+                ),
+                Explanation(
+                    rule="Etkili bir B1 cevabı şu yapıyı izler: görüş, neden, örnek ve olası bir sınır. denn, deshalb, trotzdem, einerseits…andererseits gibi bağlaçlar bu ögeleri açıkça birbirine bağlar, ama fazla kullanılmamalıdır.",
+                    why="Bağlaçlar süs değildir: her biri kesin bir mantıksal ilişkiye karşılık gelir (denn = neden, deshalb = sonuç, trotzdem = beklenmedik karşıtlık). Ölçülü kullanmak konuşmayı netleştirir; çok fazlası ağırlaştırır.",
+                    history="denn ve dann, Eski Yüksek Almancadaki aynı kelimeden (denne) gelir; bu kelime sonradan iki farklı biçime ve işleve ayrılmıştır - klasik bir tarihsel ayrışma örneği.",
+                    tip="denn (çünkü, fiil ikinci sırada) ile weil'i (çünkü, fiil sonda) karıştırma: «Ich bleibe, denn ich bin müde» ve «Ich bleibe, weil ich müde bin» ikisi de doğrudur ama yapıları farklıdır.",
+                ),
+                ("Meiner Meinung nach ist das sinnvoll.", "Deshalb schlage ich eine andere Lösung vor."),
+            ),
+            Topic(
+                "5 · Bewerbung e lavoro",
+                Explanation(
+                    rule="Il modulo professionale tratta annuncio di lavoro, Anschreiben (lettera di motivazione), Lebenslauf (curriculum), colloquio e comunicazione di squadra. Ogni testo deve essere concreto, verificabile e adatto al destinatario.",
+                    why="In un contesto professionale la forma non è meno importante del contenuto: un'espressione troppo informale in un Anschreiben comunica involontariamente scarsa serietà, anche con ottime competenze descritte.",
+                    history="Il forte grado di formularità del tedesco professionale (frasi fisse come «Mit freundlichen Grüßen») ha radici nella lunga tradizione della Kanzleisprache (lingua di cancelleria), sviluppatasi nei secoli come registro scritto ufficiale.",
+                    tip="Non improvvisare la struttura del Lebenslauf o dell'Anschreiben: il tedesco professionale premia il rispetto di un formato riconoscibile più della creatività stilistica.",
+                ),
+                Explanation(
+                    rule="The professional module covers job ads, the Anschreiben (cover letter), the Lebenslauf (CV), interviews and team communication. Every text must be concrete, verifiable and suited to its audience.",
+                    why="In a professional context, form matters as much as content: an overly informal expression in an Anschreiben unintentionally signals a lack of seriousness, even with excellent skills described.",
+                    history="The strongly formulaic nature of professional German (fixed phrases like «Mit freundlichen Grüßen») has roots in the long tradition of Kanzleisprache (chancery language), developed over centuries as an official written register.",
+                    tip="Don't improvise the structure of the Lebenslauf or Anschreiben: professional German rewards a recognisable format far more than stylistic creativity.",
+                ),
+                Explanation(
+                    rule="El módulo profesional trabaja el anuncio de empleo, el Anschreiben (carta de motivación), el Lebenslauf (currículum), la entrevista y la comunicación de equipo. Cada texto debe ser concreto, verificable y adecuado al destinatario.",
+                    why="En un contexto profesional la forma importa tanto como el contenido: una expresión demasiado informal en un Anschreiben transmite involuntariamente falta de seriedad, aunque las competencias descritas sean excelentes.",
+                    history="El fuerte carácter formulaico del alemán profesional (frases fijas como «Mit freundlichen Grüßen») tiene raíces en la larga tradición de la Kanzleisprache (lengua de cancillería), desarrollada durante siglos como registro escrito oficial.",
+                    tip="No improvises la estructura del Lebenslauf o del Anschreiben: el alemán profesional premia seguir un formato reconocible mucho más que la creatividad estilística.",
+                ),
+                Explanation(
+                    rule="Meslek modülü iş ilanını, Anschreiben'i, Lebenslauf'u, mülakatı ve ekip iletişimini kapsar. Her metin somut, doğrulanabilir ve muhataba uygun olmalıdır.",
+                    why="Meslekî bir bağlamda biçim, içerik kadar önemlidir: bir Anschreiben'de fazla samimi bir ifade, yetkinlikler mükemmel olsa bile istemeden ciddiyetsizlik izlenimi verir.",
+                    history="Meslekî Almancanın güçlü kalıplaşmış yapısı (Mit freundlichen Grüßen gibi sabit ifadeler), yüzyıllar içinde resmî yazılı bir üslup olarak gelişen Kanzleisprache geleneğine dayanır.",
+                    tip="Lebenslauf ya da Anschreiben'in yapısını doğaçlama kurma: meslekî Almanca, üslup yaratıcılığından çok tanınabilir bir formata uymayı ödüllendirir.",
+                ),
+                ("Ich bewerbe mich um die Stelle als …", "Im Anhang finden Sie meinen Lebenslauf."),
+            ),
+            Topic(
+                "6 · Strategia d'esame B1",
+                Explanation(
+                    rule="La prova B1 combina lettura globale, ricerca di dettagli mirati, un'e-mail formale e una breve presentazione orale. La revisione di un testo scritto segue un ordine preciso: prima il verbo, poi connettori, casi e infine il registro.",
+                    why="Revisionare in questo ordine funziona perché il verbo regge tutta la struttura della frase: se è sbagliato, ogni altra correzione rischia di essere inutile. Procedere dal più strutturale al più fine fa risparmiare tempo prezioso.",
+                    history="Il quadro dei livelli A1-C2 che struttura questo corso — e l'idea dei «can-do statements» che trovi a inizio di ogni modulo — nasce dal Quadro Comune Europeo di Riferimento (QCER), pubblicato dal Consiglio d'Europa nel 2001.",
+                    tip="Non aspettare la fine per revisionare tutto insieme: controlla il verbo frase per frase, subito dopo averla scritta. È più facile individuare un errore isolato che ritrovarlo in un testo già concluso.",
+                ),
+                Explanation(
+                    rule="The B1 exam combines global reading, targeted detail search, a formal email and a short oral presentation. Revising a written text follows a precise order: first the verb, then connectors, then case, and finally register.",
+                    why="Revising in this order works because the verb holds up the whole sentence structure: if it's wrong, every other correction risks being pointless. Working from the most structural to the finest detail saves valuable time.",
+                    history="The A1-C2 level framework structuring this course - and the idea of 'can-do statements' at the start of each module - comes from the Common European Framework of Reference (CEFR), published by the Council of Europe in 2001.",
+                    tip="Don't wait until the end to revise everything at once: check the verb sentence by sentence, right after writing it. It's easier to spot an isolated mistake than to find it in an already-finished text.",
+                ),
+                Explanation(
+                    rule="La prueba B1 combina lectura global, búsqueda de detalles concretos, un correo formal y una breve presentación oral. Revisar un texto escrito sigue un orden preciso: primero el verbo, luego los conectores, después los casos y por último el registro.",
+                    why="Revisar en este orden funciona porque el verbo sostiene toda la estructura de la frase: si está mal, cualquier otra corrección corre el riesgo de ser inútil. Ir de lo estructural a lo fino ahorra un tiempo valioso.",
+                    history="El marco de niveles A1-C2 que estructura este curso -y la idea de los 'can-do statements' al inicio de cada módulo- procede del Marco Común Europeo de Referencia (MCER), publicado por el Consejo de Europa en 2001.",
+                    tip="No esperes al final para revisarlo todo junto: comprueba el verbo frase por frase, justo después de escribirla. Es más fácil detectar un error aislado que en un texto ya terminado.",
+                ),
+                Explanation(
+                    rule="B1 sınavı genel okumayı, hedefli ayrıntı aramayı, resmî bir e-postayı ve kısa bir sözlü sunumu bir araya getirir. Yazılı bir metni gözden geçirmek belirli bir sırayı izler: önce fiil, sonra bağlaçlar, hâller, en son üslup.",
+                    why="Bu sırayla gözden geçirmek işe yarar, çünkü fiil tüm cümle yapısını taşır: yanlışsa diğer düzeltmeler boşa gidebilir. En yapısaldan en ince ayrıntıya ilerlemek sınavda değerli zaman kazandırır.",
+                    history="Bu dersi yapılandıran A1-C2 seviye çerçevesi - ve her modülün başındaki 'yapabilirim ifadeleri' fikri - Avrupa Konseyi tarafından 2001'de yayımlanan Avrupa Ortak Dil Çerçevesi'nden (CEFR) gelir.",
+                    tip="Her şeyi sona bırakıp gözden geçirme: fiili cümle cümle, yazdıktan hemen sonra kontrol et. İzole bir hatayı bitmiş bir metinde bulmaktan çok daha kolaydır.",
+                ),
+                ("Könnten wir einen Termin vereinbaren?", "Zusammenfassend möchte ich betonen, dass …"),
+            ),
         ],
     },
     "B2": {
@@ -334,12 +895,174 @@ COURSES: dict[str, dict] = {
         "title": {"it": "Precisione, registro e argomentazione", "en": "Precision, register and argument", "es": "Precisión, registro y argumentación", "tr": "Kesinlik, üslup ve sav"},
         "can": {"it": "Sostenere un punto di vista, comprendere testi complessi e scrivere in modo formale e strutturato.", "en": "Support a viewpoint, understand complex texts and write with a formal, structured style.", "es": "Defender un punto de vista, comprender textos complejos y escribir de forma formal y estructurada.", "tr": "Bir görüşü desteklemek, karmaşık metinleri anlamak ve resmî, düzenli yazmak."},
         "topics": [
-            Topic("1 · Konjunktiv I e fonti", "Il Konjunktiv I segnala discorso riportato e distanza dalla fonte. Non serve a rendere il testo più difficile: serve a mostrare chi afferma cosa.", "Konjunktiv I marks reported speech and distance from a source. Its job is not complexity; it makes the origin of a claim transparent.", "El Konjunktiv I marca discurso referido y distancia respecto a la fuente. Hace transparente quién afirma qué.", "Konjunktiv I aktarılan konuşmayı ve kaynağa mesafeyi gösterir. Amaç zorluk değil, iddianın kaynağını görünür kılmaktır.", ("Die Firma erklärt, sie habe reagiert.", "Er sagte, er sei zufrieden.")),
-            Topic("2 · Konjunktiv II e diplomazia", "Ipotesi, desideri, critiche caute e proposte usano würde, hätte, wäre, könnte e le forme modali. Il registro è parte del significato.", "Hypotheses, wishes, tactful criticism and proposals use würde, hätte, wäre and modal forms. Register is part of meaning.", "Hipótesis, deseos, críticas prudentes y propuestas usan würde, hätte, wäre y modales. El registro forma parte del significado.", "Varsayım, istek, nazik eleştiri ve öneriler würde, hätte, wäre ve modal biçimleri kullanır. Üslup anlamın bir parçasıdır.", ("Ich würde vorschlagen, dass wir …", "An Ihrer Stelle würde ich …")),
-            Topic("3 · Argomentazione complessa", "Costruisci una tesi, definisci criteri, presenta prove e anticipa un'obiezione. I connettori doppi e le concessive servono a rendere visibile la struttura del ragionamento.", "Build a thesis, set criteria, present evidence and anticipate an objection. Paired connectors and concessions make the reasoning visible.", "Construye tesis, criterios, pruebas y una objeción prevista. Los conectores dobles y concesivos hacen visible el razonamiento.", "Tez, ölçüt, kanıt ve olası itiraz kurun. Çift bağlaçlar ve ödün cümleleri düşünce yapısını görünür kılar.", ("Zwar ist die Lösung teuer, aber sie ist nachhaltig.", "Nicht nur die Kosten, sondern auch die Qualität zählt.")),
-            Topic("4 · Nominalizzazione e stile", "Testi amministrativi e tecnici comprimono azioni in nomi. Impara a espandere una nominalizzazione per capire il testo e a usarla solo quando aumenta la precisione.", "Administrative and technical texts compress actions into nouns. Learn to unpack nominalisations for reading and use them only when they improve precision.", "Los textos técnicos condensan acciones en sustantivos. Aprende a desplegarlos para comprender y úsalos solo si aportan precisión.", "İdarî ve teknik metinler eylemleri isimleştirir. Okurken açmayı, yazarken ise yalnızca kesinlik kattığında kullanmayı öğrenin.", ("Die Durchführung der Prüfung dauert …", "Wir treffen eine Entscheidung.")),
-            Topic("5 · Lettura specialistica", "Affronta articoli, istruzioni, grafici e corrispondenza professionale con tre passaggi: tesi globale, segnali linguistici, verifica dei dettagli. Il glossario disciplinare serve a questo scopo.", "Approach articles, instructions, charts and professional correspondence in three passes: overall claim, linguistic signals, then details. The subject glossaries support this work.", "Aborda artículos, instrucciones, gráficos y correspondencia en tres pasos: idea global, señales lingüísticas y detalles. Los glosarios apoyan este trabajo.", "Makale, talimat, grafik ve meslekî yazışmayı üç adımda okuyun: ana fikir, dilsel işaretler, ayrıntılar. Alan sözlükleri bunu destekler.", ("Aus der Grafik geht hervor, dass …", "Im Vergleich zum Vorjahr …")),
-            Topic("6 · Produzione B2 e revisione", "Produci una Stellungnahme, una Beschwerde, una sintesi e una presentazione. La revisione segue una griglia: compito, struttura, prove, coesione, accuratezza, tono.", "Produce a Stellungnahme, complaint, summary and presentation. Revise using a grid: task, structure, evidence, cohesion, accuracy and tone.", "Produce una Stellungnahme, reclamación, síntesis y presentación. Revisa: tarea, estructura, pruebas, cohesión, precisión y tono.", "Stellungnahme, şikâyet, özet ve sunum üretin. Görev, yapı, kanıt, bağdaşım, doğruluk ve tonu kontrol edin.", ("Abschließend lässt sich festhalten, dass …", "Ich bitte Sie daher um eine Stellungnahme.")),
+            Topic(
+                "1 · Konjunktiv I e fonti",
+                Explanation(
+                    rule="Il Konjunktiv I (ich komme → er komme, ich habe → er habe, ich sei…) segnala il discorso riportato: chi scrive riferisce l'affermazione di un'altra fonte senza sottoscriverla come propria. È la forma standard nel giornalismo per distinguere «ciò che è stato detto» da «ciò che il narratore conferma».",
+                    why="Usare il Konjunktiv I non serve a complicare il testo: serve a rendere trasparente chi afferma cosa. Se un giornale scrive «die Firma erklärt, sie habe reagiert» (congiuntivo), riporta la versione dell'azienda senza garantirne la veridicità; con l'indicativo la presenterebbe come fatto certo.",
+                    history="Il Konjunktiv I discende dall'antico congiuntivo del proto-germanico, un tempo presente in tutta la coniugazione tedesca, come in latino o italiano. Nel tedesco parlato si è ristretto, sopravvivendo quasi solo in questa funzione — il discorso riportato — specialmente nello scritto giornalistico.",
+                    tip="Nella lingua parlata quotidiana il Konjunktiv I viene spesso sostituito dal Konjunktiv II o da dass + indicativo: non aspettarti di sentirlo spesso in una conversazione informale, ma riconoscilo nei testi scritti formali.",
+                ),
+                Explanation(
+                    rule="Konjunktiv I (ich komme → er komme, ich habe → er habe, ich sei…) marks reported speech: the writer relays another source's statement without endorsing it. It's the standard form in journalism for distinguishing 'what was said' from 'what the narrator confirms'.",
+                    why="Using Konjunktiv I isn't about complexity: it makes clear who is claiming what. If a newspaper writes 'die Firma erklärt, sie habe reagiert' (subjunctive), it reports the company's version without vouching for it; the indicative would present it as established fact.",
+                    history="Konjunktiv I descends from the old Proto-Germanic subjunctive, once present throughout German conjugation, as in Latin or Italian. In spoken German it narrowed, surviving mainly in this function - reported speech - especially in journalistic writing.",
+                    tip="In everyday spoken German, Konjunktiv I is often replaced by Konjunktiv II or dass + indicative: don't expect to hear it often in casual conversation, but recognise it in formal written texts.",
+                ),
+                Explanation(
+                    rule="El Konjunktiv I (ich komme → er komme, ich habe → er habe, ich sei…) marca el discurso referido: quien escribe transmite la afirmación de otra fuente sin hacerla suya. Es la forma estándar en el periodismo para distinguir 'lo que se dijo' de 'lo que el narrador confirma'.",
+                    why="Usar el Konjunktiv I no complica el texto: deja claro quién afirma qué. Si un periódico escribe 'die Firma erklärt, sie habe reagiert' (subjuntivo), reporta la versión de la empresa sin garantizarla; el indicativo la presentaría como hecho establecido.",
+                    history="El Konjunktiv I desciende del antiguo subjuntivo protogermánico, presente en toda la conjugación alemana, como en latín o español. En el alemán hablado se restringió, sobreviviendo casi solo en esta función, especialmente en lo escrito periodístico.",
+                    tip="En la lengua hablada cotidiana, el Konjunktiv I suele sustituirse por el Konjunktiv II o dass + indicativo: no esperes oírlo a menudo en una conversación informal, pero reconócelo en textos escritos formales.",
+                ),
+                Explanation(
+                    rule="Konjunktiv I (ich komme → er komme, ich habe → er habe, ich sei…) aktarılan konuşmayı işaretler: yazan kişi başka bir kaynağın ifadesini benimsemeden aktarır. Gazetecilikte 'söylenen' ile 'anlatıcının onayladığı'nı ayırmak için standart biçimdir.",
+                    why="Konjunktiv I kullanmak metni karmaşıklaştırmaz: kimin neyi iddia ettiğini şeffaf kılar. Bir gazete 'die Firma erklärt, sie habe reagiert' yazarsa, şirketin versiyonunu garanti etmeden aktarır; bildirme kipi bunu kesin gerçek olarak sunardı.",
+                    history="Konjunktiv I, bir zamanlar tüm Almanca çekimde -Latince ya da İtalyancada olduğu gibi- bulunan eski Proto-Germen dilek kipinden gelir. Konuşma dilinde daralmış, neredeyse yalnızca bu işlevde, özellikle gazetecilik yazısında hayatta kalmıştır.",
+                    tip="Günlük konuşma dilinde Konjunktiv I çoğunlukla Konjunktiv II ya da dass + bildirme kipiyle değiştirilir: gündelik sohbette sık duymayı bekleme, ama resmî yazılı metinlerde tanı.",
+                ),
+                ("Die Firma erklärt, sie habe reagiert.", "Er sagte, er sei zufrieden."),
+            ),
+            Topic(
+                "2 · Konjunktiv II e diplomazia",
+                Explanation(
+                    rule="Il Konjunktiv II (würde + infinito, oppure hätte, wäre, könnte…) esprime ipotesi, desideri, critiche caute e proposte diplomatiche. La forma perifrastica con würde ha in gran parte sostituito le forme sintetiche originarie, tranne per i verbi più frequenti (sein→wäre, haben→hätte, i modali).",
+                    why="Il registro non è un dettaglio: usare il Konjunktiv II invece dell'indicativo trasforma un'affermazione diretta in un suggerimento, rendendola meno impositiva. Utile in contesti professionali o delicati, dove vuoi proporre senza ordinare.",
+                    history="würde è storicamente la forma di Konjunktiv II dello stesso verbo werden («diventare»), riusata come ausiliare per il condizionale di altri verbi — un processo comune tra le lingue (l'inglese 'would' ha una storia parallela). Il Konjunktiv II sintetico è quindi più antico; würde è l'innovazione che lo ha sostituito.",
+                    tip="Non usare würde con sein e haben nello scritto standard: «ich würde sein» suona goffo, la forma corretta resta wäre. Riserva würde ai verbi senza una forma sintetica comune.",
+                ),
+                Explanation(
+                    rule="Konjunktiv II (würde + infinitive, or hätte, wäre, könnte…) expresses hypotheses, wishes, tactful criticism and diplomatic proposals. The periphrastic würde form has largely replaced the original synthetic forms, except for the most frequent verbs (sein→wäre, haben→hätte, the modals).",
+                    why="Register isn't a detail: using Konjunktiv II instead of the indicative turns a direct statement into a suggestion, making it less imposing. Useful in professional or delicate contexts where you want to propose rather than order.",
+                    history="würde is historically the Konjunktiv II form of werden ('to become'), reused as an auxiliary for the conditional of other verbs - a common process across languages (English 'would' has a parallel history). The synthetic Konjunktiv II is older; würde is the innovation that replaced it.",
+                    tip="Don't use würde with sein and haben in standard writing: 'ich würde sein' sounds clumsy - the correct form remains wäre. Save würde for verbs without a common synthetic form.",
+                ),
+                Explanation(
+                    rule="El Konjunktiv II (würde + infinitivo, o hätte, wäre, könnte…) expresa hipótesis, deseos, críticas prudentes y propuestas diplomáticas. La forma perifrástica con würde ha sustituido en gran medida a las formas sintéticas originales, salvo los verbos más frecuentes (sein→wäre, haben→hätte, los modales).",
+                    why="El registro no es un detalle: usar el Konjunktiv II en lugar del indicativo convierte una afirmación directa en una sugerencia, haciéndola menos impositiva. Útil en contextos profesionales o delicados donde se quiere proponer en vez de ordenar.",
+                    history="würde es históricamente la forma de Konjunktiv II de werden ('llegar a ser'), reutilizada como auxiliar para el condicional de otros verbos: un proceso común entre lenguas. El Konjunktiv II sintético es más antiguo; würde es la innovación que lo sustituyó.",
+                    tip="No uses würde con sein y haben en la escritura estándar: 'ich würde sein' suena forzado; la forma correcta sigue siendo wäre. Reserva würde para verbos sin una forma sintética común.",
+                ),
+                Explanation(
+                    rule="Konjunktiv II (würde + mastar, ya da hätte, wäre, könnte…) varsayımları, istekleri, nazik eleştirileri ve diplomatik önerileri ifade eder. würde ile kurulan çevresel biçim, en sık kullanılan fiiller (sein→wäre, haben→hätte, modaller) dışında özgün yalın biçimlerin yerini büyük ölçüde almıştır.",
+                    why="Üslup bir ayrıntı değildir: bildirme kipi yerine Konjunktiv II kullanmak doğrudan bir ifadeyi bir öneriye dönüştürür, onu daha az dayatıcı kılar. Emretmek yerine önermek istediğin meslekî ya da hassas bağlamlarda yararlıdır.",
+                    history="würde, tarihsel olarak werden'in kendi Konjunktiv II biçimidir ve diğer fiillerin şart kipi için yardımcı fiil olarak yeniden kullanılmıştır - diller arasında yaygın bir süreç. Yalın Konjunktiv II daha eskidir; würde onun yerini alan yeniliktir.",
+                    tip="Standart yazıda sein ve haben ile würde kullanma: 'ich würde sein' beceriksizce durur; doğru biçim wäre olarak kalır. würde'yi yaygın yalın biçimi olmayan fiiller için sakla.",
+                ),
+                ("Ich würde vorschlagen, dass wir …", "An Ihrer Stelle würde ich …"),
+            ),
+            Topic(
+                "3 · Argomentazione complessa",
+                Explanation(
+                    rule="Un'argomentazione complessa costruisce una tesi, definisce criteri, presenta prove concrete e anticipa un'obiezione. I connettori doppi (nicht nur…sondern auch, weder…noch, zwar…aber, einerseits…andererseits) rendono visibile la struttura logica del ragionamento, non solo il suo contenuto.",
+                    why="Anticipare un'obiezione rende un'argomentazione più solida, non più debole: mostra che hai considerato il punto di vista opposto e hai comunque buone ragioni. zwar…aber fa esattamente questo: concede un punto per poi ribadire, con più forza, il proprio.",
+                    history="Questa mossa retorica — concedere un punto per poi contrapporre l'argomento più forte — è nota fin dall'antichità classica, dove la retorica latina la formalizzava con costruzioni come quidem…sed. zwar…aber segue la stessa logica argomentativa, in tedesco.",
+                    tip="Non abusare dei connettori doppi in un unico paragrafo: uno o due per risposta bastano a rendere visibile la struttura. Usarne troppi rende il testo macchinoso.",
+                ),
+                Explanation(
+                    rule="A complex argument builds a thesis, sets criteria, presents concrete evidence and anticipates an objection. Paired connectors (nicht nur…sondern auch, weder…noch, zwar…aber, einerseits…andererseits) make the logical structure of the reasoning visible, not just its content.",
+                    why="Anticipating an objection makes an argument stronger, not weaker: it shows you've considered the opposing view and still have good reasons. zwar…aber does exactly this: it concedes a point, then reasserts your own with more force.",
+                    history="This rhetorical move - conceding a point before countering with a stronger argument - has been known since classical antiquity, formalised in Latin rhetoric with constructions like quidem…sed. zwar…aber follows the same argumentative logic, in German.",
+                    tip="Don't overuse paired connectors within a single paragraph: one or two per answer is enough to make the structure visible. Too many make the text cumbersome.",
+                ),
+                Explanation(
+                    rule="Una argumentación compleja construye una tesis, fija criterios, presenta pruebas concretas y anticipa una objeción. Los conectores dobles (nicht nur…sondern auch, weder…noch, zwar…aber, einerseits…andererseits) hacen visible la estructura lógica del razonamiento, no solo su contenido.",
+                    why="Anticipar una objeción hace una argumentación más sólida, no más débil: muestra que has considerado el punto de vista contrario y aun así tienes buenas razones. zwar…aber hace justo esto: concede un punto y luego reafirma el propio con más fuerza.",
+                    history="Este movimiento retórico -conceder un punto antes de contraponer el argumento más fuerte- se conoce desde la antigüedad clásica, formalizado en la retórica latina con quidem…sed. zwar…aber sigue la misma lógica, en alemán.",
+                    tip="No abuses de los conectores dobles en un mismo párrafo: uno o dos por respuesta bastan. Usar demasiados vuelve el texto engorroso.",
+                ),
+                Explanation(
+                    rule="Karmaşık bir tartışma bir tez kurar, ölçütler belirler, somut kanıtlar sunar ve bir itirazı önceden karşılar. Çift bağlaçlar (nicht nur…sondern auch, weder…noch, zwar…aber, einerseits…andererseits) akıl yürütmenin mantıksal yapısını görünür kılar.",
+                    why="Bir itirazı önceden karşılamak bir tartışmayı zayıflatmaz, güçlendirir: karşıt görüşü dikkate aldığını ve yine de iyi nedenlerin olduğunu gösterir. zwar…aber tam olarak bunu yapar: bir puan verir, sonra kendi görüşünü daha güçlü sunar.",
+                    history="Bir puanı kabul edip daha güçlü argümanla karşılık verme hamlesi, klasik Latin retoriğinin quidem…sed ile biçimlendirdiği antik çağdan beri bilinir. zwar…aber, Almanca içinde aynı mantığı izler.",
+                    tip="Tek bir paragrafta çift bağlaçları fazla kullanma: cevap başına bir ya da iki tanesi yeterlidir. Çok fazlası metni hantallaştırır.",
+                ),
+                ("Zwar ist die Lösung teuer, aber sie ist nachhaltig.", "Nicht nur die Kosten, sondern auch die Qualität zählt."),
+            ),
+            Topic(
+                "4 · Nominalizzazione e stile",
+                Explanation(
+                    rule="I testi amministrativi e tecnici comprimono spesso un'azione in un nome (die Durchführung invece di durchführen). Riconoscere una nominalizzazione significa saperla «srotolare» mentalmente nel verbo e nei suoi argomenti per capire davvero la frase.",
+                    why="Il Nominalstil rende un testo più compatto e apparentemente più oggettivo, perché nasconde chi compie l'azione dietro un sostantivo astratto. Molto comune in ambito burocratico e scientifico, va usato con misura anche da chi scrive.",
+                    history="Il Nominalstil si è affermato a partire dal linguaggio accademico e amministrativo tedesco del diciannovesimo secolo (Wissenschaftssprache/Verwaltungssprache), un registro che ha privilegiato compattezza e distacco impersonale.",
+                    tip="Quando leggi un testo tecnico e fai fatica, trasforma ogni nominalizzazione nel verbo corrispondente (die Durchführung der Prüfung → wer führt die Prüfung durch?): spesso la frase diventa subito più chiara.",
+                ),
+                Explanation(
+                    rule="Administrative and technical texts often compress an action into a noun (die Durchführung instead of durchführen). Recognising a nominalisation means being able to mentally 'unroll' it into the verb and its arguments to really understand the sentence.",
+                    why="Nominalstil makes a text more compact and seemingly more objective, hiding who performs the action behind an abstract noun. Very common in bureaucratic and scientific writing, but should be used with restraint even by writers.",
+                    history="Nominalstil became established from 19th-century German academic and administrative language onward (Wissenschaftssprache/Verwaltungssprache), a register favouring compactness and impersonal detachment.",
+                    tip="When reading a technical text and struggling, turn each nominalisation back into its verb (die Durchführung der Prüfung → wer führt die Prüfung durch?): the sentence often becomes immediately clearer.",
+                ),
+                Explanation(
+                    rule="Los textos administrativos y técnicos suelen comprimir una acción en un sustantivo (die Durchführung en vez de durchführen). Reconocer una nominalización significa saber 'desenrollarla' mentalmente en el verbo y sus argumentos para entender la frase.",
+                    why="El Nominalstil hace un texto más compacto y aparentemente más objetivo, ocultando quién realiza la acción tras un sustantivo abstracto. Muy frecuente en lo burocrático y científico, debe usarse con mesura incluso al escribir.",
+                    history="El Nominalstil se consolidó a partir del lenguaje académico y administrativo alemán del siglo XIX (Wissenschaftssprache/Verwaltungssprache), un registro que privilegió la compacidad y el distanciamiento impersonal.",
+                    tip="Al leer un texto técnico y costarte entenderlo, convierte cada nominalización en su verbo (die Durchführung der Prüfung → wer führt die Prüfung durch?): la frase suele volverse mucho más clara.",
+                ),
+                Explanation(
+                    rule="İdari ve teknik metinler bir eylemi sık sık bir isme sıkıştırır (durchführen yerine die Durchführung). Bir isimleştirmeyi tanımak, cümleyi anlamak için onu zihinde fiile ve ögelerine 'açabilmek' demektir.",
+                    why="Nominalstil, eylemi kimin yaptığını soyut bir isim arkasında gizleyerek metni daha kompakt ve nesnel gösterir. Bürokratik ve bilimsel alanda çok yaygındır, yazan kişi de onu ölçülü kullanmalıdır.",
+                    history="Nominalstil, on dokuzuncu yüzyıl Alman akademik ve idari dilinden (Wissenschaftssprache/Verwaltungssprache) itibaren yerleşmiştir; bu üslup kompaktlığı ve kişisel olmayan mesafeyi tercih etmiştir.",
+                    tip="Teknik bir metni anlamakta zorlanınca, her isimleştirmeyi fiiline dönüştürmeyi dene (die Durchführung der Prüfung → wer führt die Prüfung durch?): cümle genelde birden çok netleşir.",
+                ),
+                ("Die Durchführung der Prüfung dauert …", "Wir treffen eine Entscheidung."),
+            ),
+            Topic(
+                "5 · Lettura specialistica",
+                Explanation(
+                    rule="Affronta articoli, istruzioni, grafici e corrispondenza professionale in tre passaggi: prima la tesi globale, poi i segnali linguistici (connettori, tempi verbali, marcatori di opinione), infine la verifica dei dettagli che ti servono davvero.",
+                    why="Leggere un testo specialistico parola per parola è inefficiente: individuare prima la struttura generale ti permette di sapere dove cercare l'informazione di cui hai bisogno, invece di scovarla per caso in frasi complesse.",
+                    history="La tendenza tedesca a formare lunghi sostantivi composti viene dal sistema di composizione molto produttivo ereditato dal proto-germanico: le lingue germaniche preferiscono unire parole in un blocco unico piuttosto che concatenarle con preposizioni.",
+                    tip="Di fronte a un sostantivo composto lunghissimo, scomponilo dall'ultima parola (il nucleo di significato) verso la prima (i modificatori), come faresti con le parentesi in matematica.",
+                ),
+                Explanation(
+                    rule="Approach articles, instructions, charts and professional correspondence in three passes: first the overall claim, then linguistic signals (connectors, tenses, opinion markers), finally the details you actually need.",
+                    why="Reading a specialist text word by word is inefficient: identifying the overall structure first tells you where to look for the information you need, instead of stumbling on it by chance in complex sentences.",
+                    history="German's tendency to form long compound nouns comes from the highly productive compounding system inherited from Proto-Germanic: Germanic languages prefer joining words into a single block rather than chaining them with prepositions.",
+                    tip="Faced with a very long compound noun, break it down from the last word (the core meaning) back to the first (the modifiers), exactly as with brackets in maths.",
+                ),
+                Explanation(
+                    rule="Aborda artículos, instrucciones, gráficos y correspondencia profesional en tres pasos: primero la tesis global, luego las señales lingüísticas (conectores, tiempos verbales, marcadores de opinión), por último los detalles que necesitas.",
+                    why="Leer un texto especializado palabra por palabra es ineficiente: identificar antes la estructura general permite saber dónde buscar la información necesaria, en vez de encontrarla por casualidad en frases complejas.",
+                    history="La tendencia alemana a formar sustantivos compuestos largos proviene del sistema de composición muy productivo heredado del protogermánico: las lenguas germánicas prefieren unir palabras en un bloque en vez de encadenarlas con preposiciones.",
+                    tip="Ante un sustantivo compuesto larguísimo, descompónlo desde la última palabra (el núcleo) hacia la primera (los modificadores), igual que con los paréntesis en matemáticas.",
+                ),
+                Explanation(
+                    rule="Makaleleri, talimatları, grafikleri ve meslekî yazışmaları üç adımda ele al: önce genel tez, sonra dilsel işaretler (bağlaçlar, zamanlar, görüş belirteçleri), son olarak gerçekten ihtiyacın olan ayrıntılar.",
+                    why="Uzman bir metni kelime kelime okumak verimsizdir: önce genel yapıyı belirlemek, ihtiyacın olan bilgiyi karmaşık cümlelerde rastlantıyla bulmak yerine nerede arayacağını bilmeni sağlar.",
+                    history="Almancanın uzun bileşik isimler kurma eğilimi, Proto-Germenceden miras kalan üretken bileşik sisteminden gelir: Germen dilleri kelimeleri edatlarla zincirlemek yerine tek bir blokta birleştirmeyi tercih eder.",
+                    tip="Çok uzun bir bileşik isimle karşılaşınca, son kelimeden (anlamın çekirdeği) ilkine doğru parçalara ayır, tıpkı matematikte parantezlerde yaptığın gibi.",
+                ),
+                ("Aus der Grafik geht hervor, dass …", "Im Vergleich zum Vorjahr …"),
+            ),
+            Topic(
+                "6 · Produzione B2 e revisione",
+                Explanation(
+                    rule="A B2 produci testi come una Stellungnahme, un Beschwerde, una sintesi o una presentazione. La revisione finale segue una griglia in sei punti: compito, struttura, prove/esempi, coesione, accuratezza grammaticale, tono/registro.",
+                    why="Una griglia esplicita serve perché, rileggendo il testo tutto insieme, è facile concentrarsi solo sui dettagli e perdere di vista problemi più grandi, come una struttura poco chiara. Controllare un aspetto alla volta evita questo rischio.",
+                    history="Questo approccio per griglie separate è lo stesso usato professionalmente da traduttori e correttori di bozze, coerente con la logica del QCER (visto in B1): descrivere le competenze in modo scomponibile e verificabile.",
+                    tip="Non revisionare tutto insieme in un'unica lettura: fai passaggi separati, uno per punto della griglia. È lento la prima volta, ma diventa rapido con la pratica.",
+                ),
+                Explanation(
+                    rule="At B2 you produce texts like a Stellungnahme, a Beschwerde, a summary or a presentation. The final revision follows a six-point checklist: task, structure, evidence/examples, cohesion, grammatical accuracy, tone/register.",
+                    why="An explicit checklist helps because, rereading a text all at once, it's easy to focus only on small details and lose sight of bigger issues like an unclear structure. Checking one aspect at a time avoids this risk.",
+                    history="This separated-checklist approach is the same one professional translators and proofreaders use, consistent with the logic of the CEFR (seen at B1): describing skills in a breakable-down, verifiable way.",
+                    tip="Don't revise everything in one read-through: do separate passes, one per checklist point. It's slow at first but becomes fast with practice.",
+                ),
+                Explanation(
+                    rule="En B2 produces textos como una Stellungnahme, una Beschwerde, un resumen o una presentación. La revisión final sigue una parrilla de seis puntos: tarea, estructura, pruebas/ejemplos, cohesión, precisión gramatical, tono/registro.",
+                    why="Una parrilla explícita ayuda porque, al releer el texto todo junto, es fácil centrarse solo en los detalles y perder de vista problemas mayores, como una estructura poco clara. Comprobar un aspecto cada vez evita este riesgo.",
+                    history="Este enfoque de parrillas separadas es el mismo que usan profesionalmente traductores y correctores, coherente con la lógica del MCER (visto en B1): describir las competencias de forma desglosable y verificable.",
+                    tip="No revises todo junto en una sola lectura: haz pasadas separadas, una por punto de la parrilla. Es lento al principio, pero se vuelve rápido con la práctica.",
+                ),
+                Explanation(
+                    rule="B2'de Stellungnahme, Beschwerde, özet ya da sunum gibi metinler üretirsin. Son gözden geçirme altı maddelik bir listeyi izler: görev, yapı, kanıt/örnekler, bağdaşım, dilbilgisel doğruluk, ton/üslup.",
+                    why="Açık bir liste işe yarar, çünkü metni bir bütün olarak yeniden okurken yalnızca küçük ayrıntılara odaklanıp belirsiz bir yapı gibi büyük sorunları gözden kaçırmak kolaydır. Her seferinde bir yönü kontrol etmek bu riski önler.",
+                    history="Bu ayrı kontrol listeleri yaklaşımı, profesyonel çevirmenlerin kullandığıyla aynıdır ve CEFR'in (B1'de görülen) mantığıyla tutarlıdır: yetkinlikleri parçalara ayrılabilir ve doğrulanabilir biçimde tanımlamak.",
+                    tip="Her şeyi tek bir okumada birlikte gözden geçirme: liste maddesi başına ayrı bir geçiş yap. İlk başta yavaştır, ama pratikle hızlanır.",
+                ),
+                ("Abschließend lässt sich festhalten, dass …", "Ich bitte Sie daher um eine Stellungnahme."),
+            ),
         ],
     },
 }
@@ -560,72 +1283,372 @@ abschließend|in conclusione|in conclusion|para concluir|son olarak
 # ciascuno: con 80 verifiche lessicali si arriva esattamente a 125 × 4 = 500.
 GRAMMAR_FACTS = {
     "A1": [
-        ("Wo steht das finite Verb im einfachen Hauptsatz?", "an zweiter Stelle", ["am Satzende", "immer an erster Stelle"]),
-        ("Welche Form ist richtig? Ich ___ aus Italien.", "komme", ["kommt", "kommen"]),
-        ("Welcher Artikel gehört zu Hund?", "der", ["die", "das"]),
-        ("Wie lautet der Akkusativ von der Kaffee?", "den Kaffee", ["dem Kaffee", "der Kaffee"]),
-        ("Welche Verneinung passt? Ich habe ___ Auto.", "kein", ["nicht", "nie"]),
-        ("Wie beginnt eine Ja/Nein-Frage?", "mit dem Verb", ["mit dem Subjekt", "mit weil"]),
-        ("Was ist korrekt? Heute ___ ich Deutsch.", "lerne", ["lernst", "lernen"]),
-        ("Welche Pluralform ist richtig? das Kind –", "die Kinder", ["die Kinden", "der Kinder"]),
-        ("Welche W-Frage fragt nach einem Ort?", "Wo?", ["Wann?", "Warum?"]),
-        ("Was passiert mit einkaufen im Hauptsatz?", "Der Präfix steht am Ende.", ["Der Präfix verschwindet.", "Nichts trennt sich."]),
-        ("Welche Anrede ist formell?", "Sie", ["du", "ihr"]),
-        ("Welche Uhrzeit ist 08:15?", "Viertel nach acht", ["Viertel vor acht", "halb acht"]),
-        ("Welche Form ist korrekt? Ich ___ einen Bruder.", "habe", ["bin", "hat"]),
-        ("Wie heißt die höfliche Bitte?", "Können Sie bitte helfen?", ["Sie können bitte helfen.", "Bitte Sie helfen können."]),
-        ("Welche Zahl schreibt man zusammen?", "einundzwanzig", ["zwanzigeins", "einsundzwanzig"]),
+        (
+            "Wo steht das finite Verb im einfachen Hauptsatz?",
+            "Du schreibst eine SMS und korrigierst dich selbst: In «Heute ich lerne Deutsch» hast du das Verb falsch platziert. An welcher Position sollte es stehen?",
+            "Formulieren Sie die Regel: Welche feste Position hat das konjugierte Verb in einem deutschen Aussagesatz?",
+            "an zweiter Stelle", ["am Satzende", "immer an erster Stelle"],
+        ),
+        (
+            "Welche Form ist richtig? Ich ___ aus Italien.",
+            "Du stellst dich in einem Sprachcafé vor und nennst deine Herkunft. Wie ergänzt du: «Ich ___ aus Italien»?",
+            "Bestimmen Sie die korrekte Verbform der ersten Person Singular von kommen im Satz: Ich ___ aus Italien.",
+            "komme", ["kommt", "kommen"],
+        ),
+        (
+            "Welcher Artikel gehört zu Hund?",
+            "Im Wörterbuch findest du das Wort «Hund» ohne Artikel. Welchen Artikel notierst du dazu in deinem Vokabelheft?",
+            "Welcher bestimmte Artikel ist im Nominativ dem Substantiv Hund zugeordnet?",
+            "der", ["die", "das"],
+        ),
+        (
+            "Wie lautet der Akkusativ von der Kaffee?",
+            "Im Café bestellst du etwas: «Ich möchte ___ Kaffee, bitte.» Welche Form von der Kaffee brauchst du hier?",
+            "Bilden Sie den Akkusativ Singular von der Kaffee.",
+            "den Kaffee", ["dem Kaffee", "der Kaffee"],
+        ),
+        (
+            "Welche Verneinung passt? Ich habe ___ Auto.",
+            "Ein Freund fragt, ob du mit dem Auto kommst. Du hast keins: Wie verneinst du «Ich habe ___ Auto»?",
+            "Welche Verneinungsform ist bei einem unbestimmten Substantiv wie Auto grammatisch korrekt?",
+            "kein", ["nicht", "nie"],
+        ),
+        (
+            "Wie beginnt eine Ja/Nein-Frage?",
+            "Du willst wissen, ob dein Kollege heute Zeit hat, und formulierst eine Ja/Nein-Frage. Womit beginnt dieser Fragetyp im Deutschen?",
+            "Welches Element steht an erster Position in einer deutschen Entscheidungsfrage (Ja/Nein-Frage)?",
+            "mit dem Verb", ["mit dem Subjekt", "mit weil"],
+        ),
+        (
+            "Was ist korrekt? Heute ___ ich Deutsch.",
+            "Du erzählst von deinem Tagesplan und beginnst den Satz mit der Zeitangabe: «Heute ___ ich Deutsch.» Welche Form passt?",
+            "Bestimmen Sie die korrekte Verbform der ersten Person Singular von lernen im Satz: Heute ___ ich Deutsch.",
+            "lerne", ["lernst", "lernen"],
+        ),
+        (
+            "Welche Pluralform ist richtig? das Kind -",
+            "Auf dem Spielplatz zählst du: «Da sind viele ___.» Wie lautet der Plural von das Kind?",
+            "Bilden Sie den Plural von das Kind.",
+            "die Kinder", ["die Kinden", "der Kinder"],
+        ),
+        (
+            "Welche W-Frage fragt nach einem Ort?",
+            "Du hast dein Buch verloren und möchtest wissen, wo es ist. Welches Fragewort verwendest du?",
+            "Welches W-Fragewort fragt spezifisch nach einem Ort?",
+            "Wo?", ["Wann?", "Warum?"],
+        ),
+        (
+            "Was passiert mit einkaufen im Hauptsatz?",
+            "Du planst deinen Samstag: «Ich ___ am Samstag ___.» (einkaufen). Was passiert mit dem Präfix ein- im Hauptsatz?",
+            "Beschreiben Sie das Verhalten des trennbaren Präfixes von einkaufen in einem einfachen Hauptsatz.",
+            "Der Präfix steht am Ende.", ["Der Präfix verschwindet.", "Nichts trennt sich."],
+        ),
+        (
+            "Welche Anrede ist formell?",
+            "Du sprichst zum ersten Mal mit deiner neuen Chefin. Welche Anrede ist hier angemessen?",
+            "Welches Personalpronomen wird im Deutschen als formelle Anrede verwendet?",
+            "Sie", ["du", "ihr"],
+        ),
+        (
+            "Welche Uhrzeit ist 08:15?",
+            "Dein Zug fährt um 08:15 Uhr. Wie sagst du diese Uhrzeit auf Deutsch?",
+            "Formulieren Sie die Uhrzeit 08:15 in Worten.",
+            "Viertel nach acht", ["Viertel vor acht", "halb acht"],
+        ),
+        (
+            "Welche Form ist korrekt? Ich ___ einen Bruder.",
+            "Du erzählst von deiner Familie: «Ich ___ einen Bruder.» Welches Verb und welche Form passen hier?",
+            "Bestimmen Sie die korrekte Form von haben in der ersten Person Singular: Ich ___ einen Bruder.",
+            "habe", ["bin", "hat"],
+        ),
+        (
+            "Wie heißt die höfliche Bitte?",
+            "Du brauchst Hilfe von einer fremden Person auf der Straße. Wie formulierst du eine höfliche Bitte?",
+            "Welche Satzstruktur entspricht einer höflichen Bitte mit einem Modalverb?",
+            "Können Sie bitte helfen?", ["Sie können bitte helfen.", "Bitte Sie helfen können."],
+        ),
+        (
+            "Welche Zahl schreibt man zusammen?",
+            "Du schreibst eine Zahl in einem Brief aus: Wie schreibt man 21 auf Deutsch als ein einziges Wort?",
+            "Welche Schreibweise der Zahl 21 ist im Deutschen orthographisch korrekt?",
+            "einundzwanzig", ["zwanzigeins", "einsundzwanzig"],
+        ),
     ],
     "A2": [
-        ("Welches Hilfsverb passt? Ich ___ nach Hause gegangen.", "bin", ["habe", "werde"]),
-        ("Welches Hilfsverb passt? Ich ___ Deutsch gelernt.", "habe", ["bin", "werde"]),
-        ("Wo? Das Buch liegt ___ Tisch.", "auf dem", ["auf den", "in den"]),
-        ("Wohin? Ich lege das Buch ___ Tisch.", "auf den", ["auf dem", "bei dem"]),
-        ("Welcher Modalverb drückt Pflicht aus?", "müssen", ["können", "mögen"]),
-        ("Welche Perfektform ist richtig? fahren –", "gefahren", ["gefahrt", "gefahrten"]),
-        ("Welche Präposition passt? Ich warte ___ den Bus.", "auf", ["mit", "bei"]),
-        ("Welcher Satz ist ein Vergleich?", "Berlin ist größer als Bonn.", ["Berlin ist groß Bonn.", "Berlin größer Bonn ist."]),
-        ("Welche Form ist der Superlativ von gut?", "am besten", ["am gutesten", "besser"]),
-        ("Welcher Artikel steht nach mit?", "Dativ", ["Akkusativ", "Nominativ"]),
-        ("Welche Ergänzung passt? Ich helfe ___ Mann.", "dem", ["den", "der"]),
-        ("Welche Ergänzung passt? Ich sehe ___ Mann.", "den", ["dem", "des"]),
-        ("Wie wird weil verwendet?", "Das Verb steht am Ende.", ["Das Verb steht zuerst.", "Es steht kein Verb."]),
-        ("Welche Zeitangabe passt zum Perfekt?", "Gestern habe ich gearbeitet.", ["Gestern arbeite ich gehabt.", "Gestern bin ich gearbeitet."]),
-        ("Welche Form ist höflich?", "Könnten Sie mir helfen?", ["Du hilfst mir?", "Sie helfen mich?"]),
+        (
+            "Welches Hilfsverb passt? Ich ___ nach Hause gegangen.",
+            "Du erzählst, wie dein Tag gestern endete: «Ich ___ nach Hause gegangen.» Welches Hilfsverb brauchst du, weil gehen eine Bewegung ausdrückt?",
+            "Bestimmen Sie das korrekte Hilfsverb im Perfekt für das Bewegungsverb gehen: Ich ___ nach Hause gegangen.",
+            "bin", ["habe", "werde"],
+        ),
+        (
+            "Welches Hilfsverb passt? Ich ___ Deutsch gelernt.",
+            "Du sprichst über deine letzten Monate: «Ich ___ Deutsch gelernt.» Welches Hilfsverb passt hier, da lernen keine Bewegung ist?",
+            "Bestimmen Sie das korrekte Hilfsverb im Perfekt für das Verb lernen: Ich ___ Deutsch gelernt.",
+            "habe", ["bin", "werde"],
+        ),
+        (
+            "Wo? Das Buch liegt ___ Tisch.",
+            "Du beschreibst dein Arbeitszimmer: «Das Buch liegt ___ Tisch.» Es befindet sich dort, es bewegt sich nicht. Welche Form passt?",
+            "Bestimmen Sie Präposition und Artikel für die Ortsangabe (Wo?): Das Buch liegt ___ Tisch.",
+            "auf dem", ["auf den", "in den"],
+        ),
+        (
+            "Wohin? Ich lege das Buch ___ Tisch.",
+            "Du räumst dein Arbeitszimmer auf und legst ein Buch hin: «Ich lege das Buch ___ Tisch.» Welche Form passt, weil hier eine Bewegung stattfindet?",
+            "Bestimmen Sie Präposition und Artikel für die Richtungsangabe (Wohin?): Ich lege das Buch ___ Tisch.",
+            "auf den", ["auf dem", "bei dem"],
+        ),
+        (
+            "Welcher Modalverb drückt Pflicht aus?",
+            "Dein Chef sagt dir, dass ein Bericht heute fertig sein muss - keine Option, sondern eine Pflicht. Welches Modalverb passt zu dieser Situation?",
+            "Welches Modalverb drückt im Deutschen eine objektive Notwendigkeit oder Pflicht aus?",
+            "müssen", ["können", "mögen"],
+        ),
+        (
+            "Welche Perfektform ist richtig? fahren -",
+            "Du erzählst von einer Reise: «Wir sind letzte Woche nach Hamburg ___.» Welches Partizip II von fahren brauchst du?",
+            "Bilden Sie das Partizip II des starken Verbs fahren.",
+            "gefahren", ["gefahrt", "gefahrten"],
+        ),
+        (
+            "Welche Präposition passt? Ich warte ___ den Bus.",
+            "Du stehst an der Haltestelle und erklärst, was du tust: «Ich warte ___ den Bus.» Welche Präposition gehört fest zu warten?",
+            "Welche Präposition regiert das Verb warten in der Bedeutung 'erwarten'?",
+            "auf", ["mit", "bei"],
+        ),
+        (
+            "Welcher Satz ist ein Vergleich?",
+            "Du vergleichst zwei Städte in einem Gespräch. Welcher der folgenden Sätze drückt einen korrekten Vergleich aus?",
+            "Welcher Satz zeigt die korrekte Struktur eines Komparativs mit als im Deutschen?",
+            "Berlin ist größer als Bonn.", ["Berlin ist groß Bonn.", "Berlin größer Bonn ist."],
+        ),
+        (
+            "Welche Form ist der Superlativ von gut?",
+            "Du bewertest mehrere Restaurants und willst das allerbeste hervorheben. Welche Form von gut brauchst du im Superlativ?",
+            "Bilden Sie den Superlativ des unregelmäßigen Adjektivs gut.",
+            "am besten", ["am gutesten", "besser"],
+        ),
+        (
+            "Welcher Artikel steht nach mit?",
+            "Du schreibst einen Satz mit der Präposition mit und musst den richtigen Fall wählen. Welchen Fall verlangt mit immer?",
+            "Welchen Kasus regiert die Präposition mit unabhängig vom Kontext?",
+            "Dativ", ["Akkusativ", "Nominativ"],
+        ),
+        (
+            "Welche Ergänzung passt? Ich helfe ___ Mann.",
+            "Ein älterer Herr braucht Hilfe beim Tragen. Du sagst: «Ich helfe ___ Mann.» Welche Form passt, weil helfen den Dativ verlangt?",
+            "Bestimmen Sie die korrekte Dativform des bestimmten Artikels im Satz: Ich helfe ___ Mann.",
+            "dem", ["den", "der"],
+        ),
+        (
+            "Welche Ergänzung passt? Ich sehe ___ Mann.",
+            "Du beschreibst, was du auf der Straße bemerkst: «Ich sehe ___ Mann.» Welche Form passt, weil sehen den Akkusativ verlangt?",
+            "Bestimmen Sie die korrekte Akkusativform des bestimmten Artikels im Satz: Ich sehe ___ Mann.",
+            "den", ["dem", "des"],
+        ),
+        (
+            "Wie wird weil verwendet?",
+            "Du erklärst einem Anfänger die Wortstellung nach weil. Was passiert dabei mit dem konjugierten Verb?",
+            "Beschreiben Sie die Verbstellung im Nebensatz nach der Konjunktion weil.",
+            "Das Verb steht am Ende.", ["Das Verb steht zuerst.", "Es steht kein Verb."],
+        ),
+        (
+            "Welche Zeitangabe passt zum Perfekt?",
+            "Du erzählst von gestern und möchtest das Perfekt korrekt verwenden. Welcher der folgenden Sätze ist grammatisch richtig?",
+            "Welcher Satz zeigt die korrekte Perfektbildung mit haben in Verbindung mit einer Zeitangabe der Vergangenheit?",
+            "Gestern habe ich gearbeitet.", ["Gestern arbeite ich gehabt.", "Gestern bin ich gearbeitet."],
+        ),
+        (
+            "Welche Form ist höflich?",
+            "Du brauchst Hilfe von einer unbekannten Person in einem Amt. Welche der folgenden Formulierungen ist höflich und grammatisch korrekt?",
+            "Welche Satzform entspricht einer höflichen Bitte mit Konjunktiv II?",
+            "Könnten Sie mir helfen?", ["Du hilfst mir?", "Sie helfen mich?"],
+        ),
     ],
     "B1": [
-        ("Wo steht das Verb nach obwohl?", "am Ende der Nebensatz", ["immer auf Position eins", "direkt nach obwohl"]),
-        ("Wie bildet man Vorgangspassiv?", "werden + Partizip II", ["sein + Infinitiv", "haben + Partizip II"]),
-        ("Wie bildet man Zustandspassiv?", "sein + Partizip II", ["werden + Infinitiv", "haben + Partizip II"]),
-        ("Welche Form ist ein Relativpronomen im Dativ?", "dem", ["den", "dessen"]),
-        ("Was gehört in eine Bewerbung?", "ein Anschreiben", ["eine Speisekarte", "eine Fahrkarte"]),
-        ("Welche Einleitung drückt Meinung aus?", "Meiner Meinung nach …", ["Am Bahnhof nach …", "In der Küche nach …"]),
-        ("Welcher Konnektor nennt einen Grund?", "weil", ["obwohl", "während"]),
-        ("Welcher Konnektor nennt ein Ziel?", "damit", ["denn", "oder"]),
-        ("Welche Form ist richtig? Das Auto ___ repariert.", "wird", ["hat", "ist werden"]),
-        ("Was verlangt trotz?", "Dativ", ["Akkusativ", "Genitiv immer"]),
-        ("Welche Form passt: Ich interessiere mich ___ Technik.", "für", ["an", "über"]),
-        ("Welche Form ist korrekt? Der Mann, ___ ich helfe, …", "dem", ["den", "dessen"]),
-        ("Welche Schlussformel ist formell?", "Mit freundlichen Grüßen", ["Bis später, Alter", "Tschüsschen"]),
-        ("Was bedeutet Arbeitszeugnis?", "Bewertung eines Arbeitsverhältnisses", ["Fahrkarte zur Arbeit", "Arbeitsplan für morgen"]),
-        ("Welche Strategie ist beim Schreiben sinnvoll?", "erst Inhalt, dann sprachliche Revision", ["nur neue Wörter zählen", "nie den Text lesen"]),
+        (
+            "Wo steht das Verb nach obwohl?",
+            "Du schreibst einen Nebensatz mit obwohl und überlegst, wohin das konjugierte Verb gehört. Wo steht es?",
+            "Beschreiben Sie die Verbstellung im Nebensatz, der durch die konzessive Konjunktion obwohl eingeleitet wird.",
+            "am Ende der Nebensatz", ["immer auf Position eins", "direkt nach obwohl"],
+        ),
+        (
+            "Wie bildet man Vorgangspassiv?",
+            "Du beschreibst, dass eine Maschine gerade repariert wird, während der Prozess noch läuft. Wie bildest du dieses Passiv?",
+            "Nennen Sie die Bildungsregel des Vorgangspassivs (Passiv des Prozesses) im Deutschen.",
+            "werden + Partizip II", ["sein + Infinitiv", "haben + Partizip II"],
+        ),
+        (
+            "Wie bildet man Zustandspassiv?",
+            "Die Reparatur ist bereits abgeschlossen und du beschreibst nur noch das Ergebnis. Wie bildest du dieses Passiv?",
+            "Nennen Sie die Bildungsregel des Zustandspassivs (Passiv des Ergebnisses) im Deutschen.",
+            "sein + Partizip II", ["werden + Infinitiv", "haben + Partizip II"],
+        ),
+        (
+            "Welche Form ist ein Relativpronomen im Dativ?",
+            "Du beschreibst eine Person, der du geholfen hast: «Der Mann, ___ ich geholfen habe, …». Welche Form passt, weil helfen den Dativ verlangt?",
+            "Bestimmen Sie das Relativpronomen im Dativ Maskulinum Singular.",
+            "dem", ["den", "dessen"],
+        ),
+        (
+            "Was gehört in eine Bewerbung?",
+            "Du bereitest die Unterlagen für eine Stellenbewerbung vor. Welches Dokument erklärt, warum du für die Stelle geeignet bist?",
+            "Welches Element ist fester Bestandteil einer vollständigen deutschen Bewerbungsmappe?",
+            "ein Anschreiben", ["eine Speisekarte", "eine Fahrkarte"],
+        ),
+        (
+            "Welche Einleitung drückt Meinung aus?",
+            "Du möchtest in einer Diskussion höflich deine persönliche Sichtweise einleiten. Welche Formulierung passt?",
+            "Welche Redewendung leitet im Deutschen typischerweise eine persönliche Meinung ein?",
+            "Meiner Meinung nach …", ["Am Bahnhof nach …", "In der Küche nach …"],
+        ),
+        (
+            "Welcher Konnektor nennt einen Grund?",
+            "Du erklärst, warum du zu Hause geblieben bist, und brauchst einen kausalen Konnektor. Welcher passt?",
+            "Welcher der folgenden Konnektoren drückt eine kausale Beziehung (einen Grund) aus?",
+            "weil", ["obwohl", "während"],
+        ),
+        (
+            "Welcher Konnektor nennt ein Ziel?",
+            "Du erklärst den Zweck einer Handlung: «Ich lerne jeden Tag, ___ ich die Prüfung bestehe.» Welcher Konnektor passt?",
+            "Welcher Konnektor drückt eine finale Beziehung (einen Zweck) aus?",
+            "damit", ["denn", "oder"],
+        ),
+        (
+            "Welche Form ist richtig? Das Auto ___ repariert.",
+            "Die Werkstatt arbeitet gerade an deinem Auto. Wie beschreibst du diesen laufenden Vorgang im Passiv?",
+            "Bestimmen Sie die korrekte Form des Vorgangspassivs im Satz: Das Auto ___ repariert.",
+            "wird", ["hat", "ist werden"],
+        ),
+        (
+            "Was verlangt trotz?",
+            "Du schreibst einen Satz mit trotz und musst den passenden Fall wählen. Welchen Fall verlangt trotz meistens?",
+            "Welchen Kasus regiert die Präposition trotz im heutigen Sprachgebrauch überwiegend?",
+            "Dativ", ["Akkusativ", "Genitiv immer"],
+        ),
+        (
+            "Welche Form passt: Ich interessiere mich ___ Technik.",
+            "Du erzählst von deinen Interessen: «Ich interessiere mich ___ Technik.» Welche feste Präposition gehört zu diesem Verb?",
+            "Welche Präposition bildet mit sich interessieren die feste Verbindung?",
+            "für", ["an", "über"],
+        ),
+        (
+            "Welche Form ist korrekt? Der Mann, ___ ich helfe, …",
+            "Du beschreibst jemanden, dem du regelmäßig hilfst. Welches Relativpronomen passt, weil helfen den Dativ verlangt?",
+            "Bestimmen Sie das korrekte Relativpronomen im Dativ im Satz: Der Mann, ___ ich helfe, …",
+            "dem", ["den", "dessen"],
+        ),
+        (
+            "Welche Schlussformel ist formell?",
+            "Du beendest eine formelle E-Mail an eine Behörde. Welche Schlussformel ist angemessen?",
+            "Welche Grußformel entspricht dem formellen Register in offizieller Korrespondenz?",
+            "Mit freundlichen Grüßen", ["Bis später, Alter", "Tschüsschen"],
+        ),
+        (
+            "Was bedeutet Arbeitszeugnis?",
+            "Nach dem Ende deiner Stelle bittet dich dein Arbeitgeber, ein bestimmtes Dokument auszustellen. Was ist ein Arbeitszeugnis?",
+            "Definieren Sie den Begriff Arbeitszeugnis im deutschen Arbeitskontext.",
+            "Bewertung eines Arbeitsverhältnisses", ["Fahrkarte zur Arbeit", "Arbeitsplan für morgen"],
+        ),
+        (
+            "Welche Strategie ist beim Schreiben sinnvoll?",
+            "Du hast einen Text fertig geschrieben und überlegst, wie du am effektivsten überarbeitest. Welche Reihenfolge ist sinnvoll?",
+            "Welche Revisionsstrategie gilt beim akademischen und beruflichen Schreiben als sinnvoll?",
+            "erst Inhalt, dann sprachliche Revision", ["nur neue Wörter zählen", "nie den Text lesen"],
+        ),
     ],
     "B2": [
-        ("Wofür wird Konjunktiv I oft genutzt?", "indirekte Rede", ["einfache Vergangenheit", "Pluralbildung"]),
-        ("Welche Form drückt eine höfliche Hypothese aus?", "Ich würde vorschlagen …", ["Ich schlage gestern vor.", "Ich werde vorgeschlagen."]),
-        ("Welcher Doppelkonnektor bedeutet not only … but also?", "nicht nur … sondern auch", ["weder … noch", "zwar … aber"]),
-        ("Was bedeutet eine Entscheidung treffen?", "entscheiden", ["vergleichen", "ankommen"]),
-        ("Welche Textsorte verlangt eine begründete Position?", "Stellungnahme", ["Einkaufsliste", "Fahrplan"]),
-        ("Welcher Ausdruck leitet eine Folgerung ein?", "folglich", ["hingegen", "zwar"]),
-        ("Was kennzeichnet einen guten B2-Absatz?", "These, Beleg und Schluss", ["nur ein Stichwort", "möglichst viele Ausrufezeichen"]),
-        ("Welche Form ist Konjunktiv II von haben?", "hätte", ["habe", "hatte"]),
-        ("Welche Form ist Konjunktiv I von sein (er)?", "sei", ["wäre", "ist"]),
-        ("Was ist eine Nominalisierung?", "eine Handlung als Nomen ausdrücken", ["ein Nomen streichen", "nur Verben benutzen"]),
-        ("Welche Präposition passt? abhängen ___", "von", ["für", "durch"]),
-        ("Welche Wendung relativiert eine Aussage?", "Es lässt sich feststellen, dass …", ["Ich weiß alles!", "Das ist niemals wichtig."]),
-        ("Wozu dient ein Gegenargument?", "die eigene Position differenziert prüfen", ["das Thema wechseln", "den Text kürzen"]),
-        ("Welche Form ist korrekt? Er sagte, er ___ krank.", "sei", ["ist", "wäre gewesen immer"]),
-        ("Wie funktioniert zwar … aber?", "Konzession und Kontrast", ["zwei gleiche Gründe", "eine Zeitangabe"]),
+        (
+            "Wofür wird Konjunktiv I oft genutzt?",
+            "Ein Journalist gibt die Aussage einer Politikerin wieder, ohne sie persönlich zu bestätigen. Welche Funktion erfüllt der Konjunktiv I hier?",
+            "Nennen Sie die zentrale grammatische Funktion des Konjunktiv I im heutigen Deutsch.",
+            "indirekte Rede", ["einfache Vergangenheit", "Pluralbildung"],
+        ),
+        (
+            "Welche Form drückt eine höfliche Hypothese aus?",
+            "Du möchtest in einer Besprechung eine Idee vorsichtig und höflich einbringen, ohne zu direkt zu wirken. Welche Formulierung passt?",
+            "Welche Konstruktion mit Konjunktiv II drückt einen höflichen, hypothetischen Vorschlag aus?",
+            "Ich würde vorschlagen …", ["Ich schlage gestern vor.", "Ich werde vorgeschlagen."],
+        ),
+        (
+            "Welcher Doppelkonnektor bedeutet not only … but also?",
+            "Du möchtest zwei positive Aspekte gleichzeitig hervorheben, ohne den zweiten abzuschwächen. Welcher Doppelkonnektor passt?",
+            "Welcher deutsche Doppelkonnektor entspricht semantisch der englischen Struktur not only … but also?",
+            "nicht nur … sondern auch", ["weder … noch", "zwar … aber"],
+        ),
+        (
+            "Was bedeutet eine Entscheidung treffen?",
+            "In einem formellen Text liest du die nominalisierte Wendung 'eine Entscheidung treffen'. Welches einfache Verb steckt dahinter?",
+            "Welches Verb entspricht der Nominalisierung eine Entscheidung treffen?",
+            "entscheiden", ["vergleichen", "ankommen"],
+        ),
+        (
+            "Welche Textsorte verlangt eine begründete Position?",
+            "Du sollst in der Prüfung zu einem kontroversen Thema schriftlich begründet Position beziehen. Welche Textsorte ist das?",
+            "Welche Textsorte verlangt strukturell These, Argumente und eine begründete Schlussfolgerung?",
+            "Stellungnahme", ["Einkaufsliste", "Fahrplan"],
+        ),
+        (
+            "Welcher Ausdruck leitet eine Folgerung ein?",
+            "Du hast gerade zwei Prämissen dargelegt und möchtest nun die logische Konsequenz formulieren. Welcher Konnektor passt?",
+            "Welcher Konnektor markiert im Deutschen eine logische Schlussfolgerung (Konsekutivität)?",
+            "folglich", ["hingegen", "zwar"],
+        ),
+        (
+            "Was kennzeichnet einen guten B2-Absatz?",
+            "Du überarbeitest einen Absatz für eine schriftliche Prüfung und prüfst, ob er strukturell vollständig ist. Was sollte er enthalten?",
+            "Welche drei Elemente kennzeichnen einen strukturell vollständigen argumentativen Absatz auf B2-Niveau?",
+            "These, Beleg und Schluss", ["nur ein Stichwort", "möglichst viele Ausrufezeichen"],
+        ),
+        (
+            "Welche Form ist Konjunktiv II von haben?",
+            "Du formulierst einen irrealen Bedingungssatz über die Vergangenheit: «Wenn ich mehr Zeit ___, …». Welche Form von haben brauchst du?",
+            "Bilden Sie den Konjunktiv II von haben in der ersten Person Singular.",
+            "hätte", ["habe", "hatte"],
+        ),
+        (
+            "Welche Form ist Konjunktiv I von sein (er)?",
+            "Du gibst eine fremde Aussage in indirekter Rede wieder: «Er sagte, er ___ zufrieden.» Welche Form von sein passt im Konjunktiv I?",
+            "Bilden Sie den Konjunktiv I von sein in der dritten Person Singular.",
+            "sei", ["wäre", "ist"],
+        ),
+        (
+            "Was ist eine Nominalisierung?",
+            "Du liest einen bürokratischen Text und bemerkst, dass Handlungen oft als Substantive erscheinen (die Durchführung, die Prüfung). Was nennt man dieses Verfahren?",
+            "Definieren Sie den Begriff Nominalisierung im Kontext der deutschen Verwaltungs- und Wissenschaftssprache.",
+            "eine Handlung als Nomen ausdrücken", ["ein Nomen streichen", "nur Verben benutzen"],
+        ),
+        (
+            "Welche Präposition passt? abhängen ___",
+            "Du erklärst, dass ein Ergebnis von mehreren Faktoren bestimmt wird: «Das Ergebnis hängt ___ vielen Faktoren ab.» Welche Präposition gehört fest zu abhängen?",
+            "Welche Präposition bildet mit dem Verb abhängen die feste Verbindung?",
+            "von", ["für", "durch"],
+        ),
+        (
+            "Welche Wendung relativiert eine Aussage?",
+            "Du möchtest eine Schlussfolgerung vorsichtig und wissenschaftlich formulieren, ohne zu kategorisch zu klingen. Welche Wendung passt?",
+            "Welche Formulierung entspricht einem vorsichtigen, akademischen Register beim Formulieren einer Schlussfolgerung?",
+            "Es lässt sich feststellen, dass …", ["Ich weiß alles!", "Das ist niemals wichtig."],
+        ),
+        (
+            "Wozu dient ein Gegenargument?",
+            "In deinem Aufsatz möchtest du zeigen, dass du auch die andere Seite kennst, bevor du deine eigene Position bekräftigst. Wozu dient dabei ein Gegenargument?",
+            "Welche argumentative Funktion erfüllt die bewusste Einbindung eines Gegenarguments in einem B2-Text?",
+            "die eigene Position differenziert prüfen", ["das Thema wechseln", "den Text kürzen"],
+        ),
+        (
+            "Welche Form ist korrekt? Er sagte, er ___ krank.",
+            "Du berichtest, was ein Kollege dir gesagt hat, ohne die Aussage selbst zu bestätigen: «Er sagte, er ___ krank.» Welche Form passt im Konjunktiv I?",
+            "Bestimmen Sie die korrekte Form des Konjunktiv I von sein in der indirekten Rede: Er sagte, er ___ krank.",
+            "sei", ["ist", "wäre gewesen immer"],
+        ),
+        (
+            "Wie funktioniert zwar … aber?",
+            "Du gibst zunächst einen Nachteil zu, bevor du einen wichtigeren Vorteil hervorhebst: «Zwar ist die Lösung teuer, aber sie ist nachhaltig.» Welches rhetorische Muster ist das?",
+            "Welches argumentative Muster liegt der Konstruktion zwar … aber zugrunde?",
+            "Konzession und Kontrast", ["zwei gleiche Gründe", "eine Zeitangabe"],
+        ),
     ],
 }
 
@@ -651,20 +1674,40 @@ def build_question_bank() -> list[dict]:
         for position, item in enumerate(terms):
             distractors = [x for x in terms if x["de"] != item["de"]]
             chosen = [distractors[(position * 7 + offset * 11) % len(distractors)] for offset in range(3)]
+            # "meaning" e "cloze" condividono lo stesso gruppo: in una prova ne può comparire
+            # al più uno, mai entrambi, per non testare due volte la stessa identica parola.
+            group = f"{level}-vocab-{position}"
             bank.append({"id": f"{level}-m-{position}", "level": level, "type": "meaning", "item": item,
-                         "answer": item, "options": [item, *chosen]})
+                         "answer": item, "options": [item, *chosen], "group": group})
             bank.append({"id": f"{level}-c-{position}", "level": level, "type": "cloze", "item": item,
-                         "answer": item, "options": [item, *chosen]})
-        for index, (question, answer, wrong) in enumerate(GRAMMAR_FACTS[level]):
-            for variant, label in enumerate(("Regelcheck", "Mini-Szenario", "Prüfungsfrage"), start=1):
-                bank.append({"id": f"{level}-g-{index}-{variant}", "level": level, "type": "grammar",
-                             "question": f"{label} {variant}: {question}", "answer": answer, "options": [answer, *wrong]})
+                         "answer": item, "options": [item, *chosen], "group": group})
+        for index, (regelcheck, scenario, exam, answer, wrong) in enumerate(GRAMMAR_FACTS[level]):
+            # Le 3 varianti riguardano la stessa regola con un testo realmente diverso l'uno
+            # dall'altro (non solo un'etichetta diversa): condividono comunque un unico gruppo,
+            # cosi la prova ne estrae al più una, mai due o tre versioni della stessa domanda.
+            group = f"{level}-grammar-{index}"
+            for label, question in (("Regelcheck", regelcheck), ("Mini-Szenario", scenario), ("Prüfungsfrage", exam)):
+                bank.append({"id": f"{level}-g-{index}-{label}", "level": level, "type": "grammar",
+                             "question": f"{label}: {question}", "answer": answer, "options": [answer, *wrong], "group": group})
     return bank
 
 
 QUESTION_BANK = build_question_bank()
 assert len(QUESTION_BANK) == 500, "La banca deve contenere esattamente 500 quesiti"
 assert len({q['id'] for q in QUESTION_BANK}) == len(QUESTION_BANK), "Gli ID devono essere unici"
+
+
+def sample_without_duplicates(pool: list[dict], amount: int) -> list[dict]:
+    """Estrae al più un quesito per ogni gruppo (stessa parola o stessa regola di grammatica).
+    Cosi, in una singola prova, nessuna domanda può mai comparire due volte - nemmeno in una
+    forma leggermente diversa - perché il gruppo, non il singolo quesito, è l'unità di estrazione."""
+    grouped: dict[str, list[dict]] = {}
+    for question in pool:
+        grouped.setdefault(question["group"], []).append(question)
+    group_keys = list(grouped.keys())
+    random.shuffle(group_keys)
+    selected_keys = group_keys[:min(amount, len(group_keys))]
+    return [random.choice(grouped[key]) for key in selected_keys]
 
 
 def display_question(q: dict, language: str) -> tuple[str, list[str], str]:
@@ -684,9 +1727,10 @@ def make_test_key(scope: str) -> str:
 def load_or_refresh_test(scope: str, pool: list[dict], amount: int, refresh: bool = False) -> tuple[list[dict], int]:
     key, token_key = make_test_key(scope), f"test_{scope}_token"
     if refresh or key not in st.session_state:
-        st.session_state[key] = random.sample(pool, amount)
+        st.session_state[key] = sample_without_duplicates(pool, amount)
         st.session_state[token_key] = st.session_state.get(token_key, 0) + 1
         st.session_state.pop(f"test_{scope}_submitted", None)
+        st.session_state.pop(f"test_{scope}_answers", None)
     return st.session_state[key], st.session_state[token_key]
 
 
@@ -743,7 +1787,16 @@ def render_course(level: str, language: str) -> None:
         st.caption("🇩🇪 " + tx("pronunciation"))
         for topic_index, topic in enumerate(course["topics"]):
             heading = f"{topic_index + 1} · {TOPIC_TITLES[language][level][topic_index]}"
-            st.markdown(f"<div class='card chapter'><h3>{heading}</h3><p>{getattr(topic, language)}</p></div>", unsafe_allow_html=True)
+            exp: Explanation = getattr(topic, language)
+            card = (
+                f"<div class='card chapter'><h3>{html.escape(heading)}</h3>"
+                f"<p><span class='smallcaps'>{html.escape(tx('theory_rule'))}</span><br>{html.escape(exp.rule)}</p>"
+                f"<p><span class='smallcaps'>{html.escape(tx('theory_why'))}</span><br>{html.escape(exp.why)}</p>"
+                f"<p><span class='smallcaps'>{html.escape(tx('theory_history'))}</span><br>{html.escape(exp.history)}</p>"
+                f"<div class='note'><span class='smallcaps'>{html.escape(tx('theory_tip'))}</span><br>{html.escape(exp.tip)}</div>"
+                f"</div>"
+            )
+            st.markdown(card, unsafe_allow_html=True)
             examples = [{"de": line, "it": "Esempio da ascoltare", "en": "Listen to the example", "es": "Escucha el ejemplo", "tr": "Örneği dinleyin"} for line in topic.examples]
             speakable_grid(examples, language, columns=2, detail_key="translation")
     with tab_test:
@@ -883,7 +1936,7 @@ def render_subjects(language: str) -> None:
     choice = st.selectbox(tx("subject_topic"), list(SUBJECTS.keys()), format_func=lambda key: SUBJECT_LABELS[key][language])
     _, _, terms = SUBJECTS[choice]
     st.subheader(SUBJECT_LABELS[choice][language])
-    st.markdown(f"<div class='card chapter'><p>{SUBJECT_INTROS[language]}</p></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='card chapter'><p>{html.escape(SUBJECT_INTROS[language])}</p></div>", unsafe_allow_html=True)
     st.caption("🇩🇪 " + tx("pronunciation"))
     speakable_grid(terms, language, columns=4, detail_key="translation")
     if choice == "🗺️ Geografia e società":
@@ -1072,11 +2125,14 @@ assert len(VERBS) == 150, f"Attesi 150 verbi, trovati {len(VERBS)}"
 
 def render_verbs(language: str) -> None:
     st.header(tx("verb_glossary"))
-    st.markdown(f"<div class='card chapter'><p>{tx('verb_intro')}</p></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='card chapter'><p>{html.escape(tx('verb_intro'))}</p></div>", unsafe_allow_html=True)
     query = st.text_input(tx("filter"))
     query = query.casefold().strip()
     shown = [verb for verb in VERBS if not query or query in verb["de"].casefold() or query in tr(verb, language).casefold()]
     st.caption(f"{len(shown)} / {len(VERBS)} {tx('verb_count')}")
+    if not shown:
+        st.info("Nessun verbo trovato per questo filtro.")
+        return
     for start in range(0, len(shown), 30):
         chunk = shown[start:start + 30]
         speakable_grid(chunk, language, columns=5, detail_key="translation")
@@ -1088,7 +2144,7 @@ def render_verbs(language: str) -> None:
 
 def render_about() -> None:
     st.header(tx("about"))
-    st.markdown(f"<div class='card chapter'><h3>{tx('method_title')}</h3><p>{tx('method_text')}</p></div>", unsafe_allow_html=True)
+    st.markdown(f"<div class='card chapter'><h3>{html.escape(tx('method_title'))}</h3><p>{html.escape(tx('method_text'))}</p></div>", unsafe_allow_html=True)
     st.markdown("#### " + tx("sources"))
     st.markdown(tx("source_links"))
     st.markdown("#### " + tx("pronunciation_how"))
@@ -1105,9 +2161,8 @@ with top_info:
 with language_column:
     if "interface_language_choice" not in st.session_state:
         st.session_state["interface_language_choice"] = "Italiano"
-    interface_language = LANGUAGES[st.session_state["interface_language_choice"]]
     language_label = st.selectbox(
-        "🌐 " + UI[interface_language]["language"],
+        "🌐 " + UI[LANGUAGES[st.session_state["interface_language_choice"]]]["language"],
         list(LANGUAGES.keys()),
         key="interface_language_choice",
     )
@@ -1132,7 +2187,7 @@ st.sidebar.caption(f"{tx('bank')}: **500** {tx('questions')}")
 st.sidebar.caption(tx("sidebar_summary"))
 st.sidebar.caption("🔊 de-DE SpeechSynthesis")
 
-st.markdown(f"<section class='hero'><h1>🇩🇪 Der Deutsche Meister</h1><p>{tx('tagline')} · A1–B2</p></section>", unsafe_allow_html=True)
+st.markdown(f"<section class='hero'><h1>🇩🇪 Der Deutsche Meister</h1><p>{html.escape(tx('tagline'))} · A1–B2</p></section>", unsafe_allow_html=True)
 
 if section in COURSES:
     render_course(section, language)
