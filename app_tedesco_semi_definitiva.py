@@ -347,6 +347,78 @@ def speakable_grid(items: list[dict], language: str, columns: int = 4, detail_ke
     components.html(component, height=max(120, rows * row_height + 16), scrolling=False)
 
 
+def speakable_verb_table(verbs: list[dict], language: str) -> None:
+    """Tabella HTML unica per il glossario verbi: Infinitiv, Präsens, Präteritum,
+    Partizip II e Aux. sono tutti pulsanti SpeechSynthesis cliccabili (sono tedesco).
+    Solo la colonna del significato, nella lingua dell'app, resta testo semplice:
+    non ha senso far "pronunciare" italiano/spagnolo/turco/inglese come se fosse tedesco."""
+    de_columns = [
+        ("de", "Infinitiv"), ("present", "Präsens (er/sie/es)"),
+        ("preterite", "Präteritum"), ("participle", "Partizip II"), ("aux", "Aux."),
+    ]
+    header_cells = "".join(f"<th>{html.escape(label)}</th>" for _, label in de_columns) + f"<th>{html.escape(tx('meaning'))}</th>"
+
+    body_rows = []
+    for v in verbs:
+        cells = []
+        for key, _ in de_columns:
+            word = html.escape(v[key])
+            speech = html.escape(json.dumps(v[key]))
+            cells.append(
+                f'<td><button class="cell-term" onclick="say({speech}, this)" '
+                f'title="{html.escape(tx("pronunciation"))}">{word}<b>🔊</b></button></td>'
+            )
+        cells.append(f'<td class="meaning">{html.escape(tr(v, language))}</td>')
+        body_rows.append(f"<tr>{''.join(cells)}</tr>")
+
+    component = f"""
+    <!DOCTYPE html>
+    <html><head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <style>
+      *{{box-sizing:border-box}}
+      body{{margin:0;padding:2px;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:{'#0e1117' if IS_DARK else '#f6f8fc'};color:{'#fafafa' if IS_DARK else '#152033'}}}
+      .tbl-wrap{{overflow-x:auto;border:1px solid {'#3a4a5a' if IS_DARK else '#dce7f0'};border-radius:12px}}
+      table{{border-collapse:collapse;width:100%;font-size:13.5px}}
+      th{{background:{'#1a2230' if IS_DARK else '#eef4fa'};color:{'#cbd5e1' if IS_DARK else '#33475b'};text-align:left;padding:10px 12px;font-weight:700;white-space:nowrap;border-bottom:1px solid {'#3a4a5a' if IS_DARK else '#dce7f0'}}}
+      td{{padding:3px 4px;border-bottom:1px solid {'#26313f' if IS_DARK else '#eef2f6'};white-space:nowrap}}
+      tr:last-child td{{border-bottom:0}}
+      tr:hover td{{background:{'#161d27' if IS_DARK else '#f8fbfd'}}}
+      .cell-term{{border:0;background:transparent;cursor:pointer;padding:8px 10px;border-radius:8px;font:inherit;font-weight:600;color:{'#e2e8f0' if IS_DARK else '#12365d'};touch-action:manipulation;-webkit-tap-highlight-color:transparent;white-space:nowrap}}
+      .cell-term:hover, .cell-term:focus-visible{{background:{'#1e3a4a' if IS_DARK else '#e3f3fb'};color:#0d7c9c}}
+      .cell-term b{{font-weight:400;opacity:.6;margin-left:4px;font-size:11px}}
+      td.meaning{{padding:3px 12px;color:{'#94a3b8' if IS_DARK else '#64748b'}}}
+      @media(max-width:600px){{table{{font-size:12.5px}} .cell-term{{padding:9px 8px}}}}
+    </style></head><body>
+    <div class="tbl-wrap"><table>
+      <thead><tr>{header_cells}</tr></thead>
+      <tbody>{''.join(body_rows)}</tbody>
+    </table></div>
+    <script>
+      function germanVoice() {{
+        const voices = speechSynthesis.getVoices();
+        return voices.find(v => v.lang.toLowerCase().startsWith('de')) || voices.find(v => v.lang.toLowerCase().includes('de')) || null;
+      }}
+      function say(word, el) {{
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(word);
+        u.lang = 'de-DE'; u.rate = .78; u.pitch = 1;
+        const voice = germanVoice(); if (voice) u.voice = voice;
+        el.style.color = '#0d7c9c';
+        u.onend = () => {{ el.style.color = ''; }};
+        u.onerror = () => {{ el.style.color = ''; }};
+        window.speechSynthesis.speak(u);
+      }}
+      if (speechSynthesis.onvoiceschanged !== undefined) {{
+        speechSynthesis.onvoiceschanged = () => germanVoice();
+      }}
+    </script>
+    </body></html>"""
+    row_height = 44
+    height = 50 + len(verbs) * row_height + 12
+    components.html(component, height=height, scrolling=False)
+
+
 # ---------------------------------------------------------------------------
 # Percorso: spiegazioni nate per ciascuna lingua di app, con esempi tedeschi.
 # ---------------------------------------------------------------------------
@@ -2638,11 +2710,7 @@ def render_verbs(language: str) -> None:
         return
     for start in range(0, len(shown), 30):
         chunk = shown[start:start + 30]
-        speakable_grid(chunk, language, columns=5, detail_key="translation")
-        st.dataframe(
-            [{"Infinitiv": v["de"], "Präsens (er/sie/es)": v["present"], "Präteritum": v["preterite"], "Partizip II": v["participle"], "Aux.": v["aux"], tx("meaning"): tr(v, language)} for v in chunk],
-            hide_index=True, use_container_width=True,
-        )
+        speakable_verb_table(chunk, language)
 
 
 def render_about() -> None:
