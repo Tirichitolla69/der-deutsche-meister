@@ -2406,6 +2406,26 @@ prüfen|controllare|to check|comprobar|kontrol etmek
 reparieren|riparare|to repair|reparar|onarmak
 wechseln|sostituire|to replace|cambiar|değiştirmek
 messen|misurare|to measure|medir|ölçmek
+der Auspuff|lo scarico|exhaust pipe|el tubo de escape|egzoz
+die Lichtmaschine|l'alternatore|alternator|el alternador|alternatör
+der Keilriemen|la cinghia|drive belt|la correa|kayış
+die Achse|l'asse|axle|el eje|aks
+der Stoßdämpfer|l'ammortizzatore|shock absorber|el amortiguador|amortisör
+die Werkstatt|l'officina|workshop|el taller|atölye
+der Schraubenschlüssel|la chiave inglese|wrench|la llave inglesa|ingiliz anahtarı
+die Zange|la pinza|pliers|los alicates|pense
+der Schraubenzieher|il cacciavite|screwdriver|el destornillador|tornavida
+der Hammer|il martello|hammer|el martillo|çekiç
+die Schutzbrille|gli occhiali di protezione|safety goggles|las gafas de protección|koruyucu gözlük
+die Arbeitshandschuhe|i guanti da lavoro|work gloves|los guantes de trabajo|iş eldiveni
+der Helm|il casco|helmet|el casco|kask
+die Hydraulik|l'idraulica|hydraulics|la hidráulica|hidrolik
+der Kolben|il pistone|piston|el pistón|piston
+die Karosserie|la carrozzeria|bodywork|la carrocería|kaporta
+montieren|montare|to assemble|montar|monte etmek
+demontieren|smontare|to disassemble|desmontar|sökmek
+schmieren|lubrificare|to lubricate|lubricar|yağlamak
+das Ersatzteil|il pezzo di ricambio|spare part|la pieza de repuesto|yedek parça
 """)),
     "💻 Informatica e tecnologia": ("Hardware, rete e uso responsabile", "Organizza il lessico in input, elaborazione, memoria, rete e sicurezza. Per ogni parola, prova a descrivere funzione, collegamento e problema possibile.", parse_terms("""
 der Prozessor|il processore|processor|el procesador|işlemci
@@ -2426,6 +2446,26 @@ verschlüsseln|crittografare|to encrypt|cifrar|şifrelemek
 installieren|installare|to install|instalar|yüklemek
 aktualisieren|aggiornare|to update|actualizar|güncellemek
 die Datenschutzregel|la regola sulla privacy|data protection rule|la norma de privacidad|veri koruma kuralı
+der Router|il router|router|el router|router
+das WLAN|il Wi-Fi|Wi-Fi|el wifi|Wi-Fi
+die Cloud|il cloud|cloud|la nube|bulut
+die App|l'app|app|la aplicación|uygulama
+der Browser|il browser|browser|el navegador|tarayıcı
+die Suchmaschine|il motore di ricerca|search engine|el buscador|arama motoru
+der Server|il server|server|el servidor|sunucu
+die Software|il software|software|el software|yazılım
+die Hardware|l'hardware|hardware|el hardware|donanım
+der Virus|il virus|virus|el virus|virüs
+die Firewall|il firewall|firewall|el cortafuegos|güvenlik duvarı
+der USB-Stick|la chiavetta USB|USB stick|la memoria USB|USB bellek
+der Drucker|la stampante|printer|la impresora|yazıcı
+die E-Mail|l'e-mail|email|el correo electrónico|e-posta
+der Anhang|l'allegato|attachment|el archivo adjunto|ek
+herunterladen|scaricare|to download|descargar|indirmek
+hochladen|caricare|to upload|subir|yüklemek
+speichern|salvare|to save|guardar|kaydetmek
+löschen|eliminare|to delete|eliminar|silmek
+der Absturz|il blocco del sistema|crash|el bloqueo|çökme
 """)),
     "🗺️ Geografia e società": ("Spazio, popolazione e Germania federale", "La geografia è linguaggio per confrontare dati e spiegare relazioni: posizione, confine, clima, economia, migrazione e istituzioni. Usa le carte per formulare ipotesi, non solo per memorizzare nomi.", parse_terms("""
 die Hauptstadt|la capitale|capital city|la capital|başkent
@@ -2446,6 +2486,26 @@ die Wahl|l'elezione|election|la elección|seçim
 die Migration|la migrazione|migration|la migración|göç
 die Europäische Union|l'Unione europea|European Union|la Unión Europea|Avrupa Birliği
 die Nachhaltigkeit|la sostenibilità|sustainability|la sostenibilidad|sürdürülebilirlik
+der Kontinent|il continente|continent|el continente|kıta
+der Ozean|l'oceano|ocean|el océano|okyanus
+die Insel|l'isola|island|la isla|ada
+die Wüste|il deserto|desert|el desierto|çöl
+der Wald|la foresta|forest|el bosque|orman
+die Region|la regione|region|la región|bölge
+der Bezirk|il distretto|district|el distrito|ilçe
+die Gemeinde|il comune|municipality|el municipio|belediye
+der Bürgermeister|il sindaco|mayor|el alcalde|belediye başkanı
+die Regierung|il governo|government|el gobierno|hükümet
+das Parlament|il parlamento|parliament|el parlamento|parlamento
+das Gesetz|la legge|law|la ley|kanun
+der Bürger|il cittadino|citizen|el ciudadano|vatandaş
+die Staatsangehörigkeit|la cittadinanza|citizenship|la nacionalidad|vatandaşlık
+die Kultur|la cultura|culture|la cultura|kültür
+die Religion|la religione|religion|la religión|din
+die Gesellschaft|la società|society|la sociedad|toplum
+der Frieden|la pace|peace|la paz|barış
+die Wirtschaft|l'economia|economy|la economía|ekonomi
+die Umwelt|l'ambiente|environment|el medio ambiente|çevre
 """)),
     "🧮 Matematica e scienze": ("Numeri, misure e ragionamento", "Nel tedesco tecnico chiarezza e unità di misura sono parte del risultato. Leggi prima il simbolo, poi esprimi l'operazione in una frase completa.", parse_terms("""
 die Zahl|il numero|number|el número|sayı
@@ -2466,6 +2526,26 @@ plus|più|plus|más|artı
 minus|meno|minus|menos|eksi
 geteilt durch|diviso per|divided by|dividido por|bölü
 gleich|uguale|equal|igual|eşit
+der Kreis|il cerchio|circle|el círculo|daire
+das Dreieck|il triangolo|triangle|el triángulo|üçgen
+das Quadrat|il quadrato|square|el cuadrado|kare
+der Winkel|l'angolo|angle|el ángulo|açı
+der Durchmesser|il diametro|diameter|el diámetro|çap
+der Radius|il raggio|radius|el radio|yarıçap
+der Umfang|il perimetro|perimeter|el perímetro|çevre
+das Volumen|il volume|volume|el volumen|hacim
+die Formel|la formula|formula|la fórmula|formül
+der Durchschnitt|la media|average|el promedio|ortalama
+die Statistik|la statistica|statistics|la estadística|istatistik
+die Wahrscheinlichkeit|la probabilità|probability|la probabilidad|olasılık
+das Experiment|l'esperimento|experiment|el experimento|deney
+die Energie|l'energia|energy|la energía|enerji
+die Kraft|la forza|force|la fuerza|kuvvet
+die Masse|la massa|mass|la masa|kütle
+die Chemie|la chimica|chemistry|la química|kimya
+die Physik|la fisica|physics|la física|fizik
+addieren|addizionare|to add|sumar|toplamak
+multiplizieren|moltiplicare|to multiply|multiplicar|çarpmak
 """)),
     "🩺 Corpo e salute": ("Corpo, benessere e consulto", "Distingui sintomo, parte del corpo e azione. In un contesto sanitario è utile dire dove fa male, da quando e con quale intensità, senza improvvisare diagnosi.", parse_terms("""
 der Kopf|la testa|head|la cabeza|baş
@@ -2486,6 +2566,148 @@ das Rezept|la ricetta medica|prescription|la receta|reçete
 krank|malato|ill|enfermo|hasta
 gesund|sano|healthy|sano|sağlıklı
 sich ausruhen|riposarsi|to rest|descansar|dinlenmek
+die Nase|il naso|nose|la nariz|burun
+der Mund|la bocca|mouth|la boca|ağız
+der Zahn|il dente|tooth|el diente|diş
+das Herz|il cuore|heart|el corazón|kalp
+die Lunge|il polmone|lung|el pulmón|akciğer
+der Magen|lo stomaco|stomach|el estómago|mide
+die Haut|la pelle|skin|la piel|cilt
+das Knie|il ginocchio|knee|la rodilla|diz
+der Husten|la tosse|cough|la tos|öksürük
+die Erkältung|il raffreddore|cold (illness)|el resfriado|soğuk algınlığı
+die Allergie|l'allergia|allergy|la alergia|alerji
+die Verletzung|la lesione|injury|la lesión|yaralanma
+die Impfung|la vaccinazione|vaccination|la vacunación|aşı
+die Apotheke|la farmacia|pharmacy|la farmacia|eczane
+das Medikament|il farmaco|medication|el medicamento|ilaç
+die Tablette|la compressa|tablet/pill|la pastilla|hap
+der Termin|l'appuntamento|appointment|la cita|randevu
+die Versicherung|l'assicurazione|insurance|el seguro|sigorta
+sich verletzen|ferirsi|to get injured|lastimarse|yaralanmak
+husten|tossire|to cough|toser|öksürmek
+""")),
+    "🏠 Casa e vita quotidiana": ("Ambienti, mobili e faccende", "Il lessico della casa serve per descrivere spazi, oggetti e piccole azioni ripetute ogni giorno: utile per parlare con coinquilini, padroni di casa e vicini.", parse_terms("""
+die Wohnung|l'appartamento|apartment|el apartamento|daire
+das Haus|la casa|house|la casa|ev
+das Zimmer|la stanza|room|la habitación|oda
+die Küche|la cucina|kitchen|la cocina|mutfak
+das Wohnzimmer|il soggiorno|living room|el salón|oturma odası
+das Schlafzimmer|la camera da letto|bedroom|el dormitorio|yatak odası
+das Badezimmer|il bagno|bathroom|el baño|banyo
+der Flur|il corridoio|hallway|el pasillo|koridor
+der Balkon|il balcone|balcony|el balcón|balkon
+der Keller|la cantina|cellar|el sótano|bodrum
+die Tür|la porta|door|la puerta|kapı
+das Fenster|la finestra|window|la ventana|pencere
+der Tisch|il tavolo|table|la mesa|masa
+der Stuhl|la sedia|chair|la silla|sandalye
+das Bett|il letto|bed|la cama|yatak
+der Schrank|l'armadio|wardrobe|el armario|dolap
+das Sofa|il divano|sofa|el sofá|kanepe
+die Lampe|la lampada|lamp|la lámpara|lamba
+der Kühlschrank|il frigorifero|fridge|el frigorífico|buzdolabı
+die Waschmaschine|la lavatrice|washing machine|la lavadora|çamaşır makinesi
+der Müll|la spazzatura|rubbish|la basura|çöp
+die Miete|l'affitto|rent|el alquiler|kira
+der Vermieter|il padrone di casa|landlord|el arrendador|ev sahibi
+putzen|pulire|to clean|limpiar|temizlemek
+aufräumen|riordinare|to tidy up|ordenar|toplamak
+waschen|lavare|to wash|lavar|yıkamak
+kochen|cucinare|to cook|cocinar|pişirmek
+die Nachbarn|i vicini|neighbours|los vecinos|komşular
+""")),
+    "🍳 Cucina, cibo e pasti": ("Alimenti, pasti e cottura", "Nomi di cibi e verbi di cucina servono per fare la spesa, leggere un menu e seguire una ricetta. Associa ogni parola a un gesto o a un pasto concreto.", parse_terms("""
+das Frühstück|la colazione|breakfast|el desayuno|kahvaltı
+das Mittagessen|il pranzo|lunch|el almuerzo|öğle yemeği
+das Abendessen|la cena|dinner|la cena|akşam yemeği
+das Brot|il pane|bread|el pan|ekmek
+die Butter|il burro|butter|la mantequilla|tereyağı
+der Käse|il formaggio|cheese|el queso|peynir
+die Milch|il latte|milk|la leche|süt
+das Ei|l'uovo|egg|el huevo|yumurta
+das Gemüse|la verdura|vegetables|la verdura|sebze
+das Obst|la frutta|fruit|la fruta|meyve
+das Fleisch|la carne|meat|la carne|et
+der Fisch|il pesce|fish|el pescado|balık
+der Reis|il riso|rice|el arroz|pirinç
+die Nudeln|la pasta|pasta|la pasta|makarna
+die Suppe|la zuppa|soup|la sopa|çorba
+der Zucker|lo zucchero|sugar|el azúcar|şeker
+das Salz|il sale|salt|la sal|tuz
+der Pfeffer|il pepe|pepper|la pimienta|biber
+das Öl|l'olio|oil|el aceite|yağ
+der Topf|la pentola|pot|la olla|tencere
+die Pfanne|la padella|pan|la sartén|tava
+das Messer|il coltello|knife|el cuchillo|bıçak
+die Gabel|la forchetta|fork|el tenedor|çatal
+der Löffel|il cucchiaio|spoon|la cuchara|kaşık
+der Teller|il piatto|plate|el plato|tabak
+das Glas|il bicchiere|glass|el vaso|bardak
+schneiden|tagliare|to cut|cortar|kesmek
+braten|friggere|to fry|freír|kızartmak
+backen|cuocere al forno|to bake|hornear|fırınlamak
+der Geschmack|il sapore|taste|el sabor|tat
+""")),
+    "🚌 Trasporti e mobilità": ("Mezzi, biglietti e tragitti", "Muoversi in una città tedesca richiede lessico preciso su mezzi, orari e imprevisti. Utile anche per capire annunci e cartelli in stazione.", parse_terms("""
+der Bus|l'autobus|bus|el autobús|otobüs
+die Bahn|il treno|train|el tren|tren
+die U-Bahn|la metropolitana|underground|el metro|metro
+die Straßenbahn|il tram|tram|el tranvía|tramvay
+das Fahrrad|la bicicletta|bicycle|la bicicleta|bisiklet
+das Auto|l'auto|car|el coche|araba
+der Bahnhof|la stazione|train station|la estación|tren istasyonu
+die Haltestelle|la fermata|stop|la parada|durak
+das Gleis|il binario|platform|el andén|peron
+der Fahrplan|l'orario|timetable|el horario|tarife
+die Fahrkarte|il biglietto|ticket|el billete|bilet
+der Fahrschein|il biglietto di viaggio|travel ticket|el boleto|yolcu bileti
+die Verspätung|il ritardo|delay|el retraso|gecikme
+der Führerschein|la patente|driving licence|el carné de conducir|ehliyet
+die Ampel|il semaforo|traffic light|el semáforo|trafik ışığı
+die Kreuzung|l'incrocio|crossroads|el cruce|kavşak
+der Parkplatz|il parcheggio|car park|el aparcamiento|otopark
+der Stau|l'ingorgo|traffic jam|el atasco|trafik sıkışıklığı
+die Autobahn|l'autostrada|motorway|la autopista|otoyol
+der Flughafen|l'aeroporto|airport|el aeropuerto|havalimanı
+das Flugzeug|l'aereo|airplane|el avión|uçak
+das Ticket|il biglietto aereo|flight ticket|el billete de avión|uçak bileti
+der Koffer|la valigia|suitcase|la maleta|bavul
+umsteigen|cambiare mezzo|to change/transfer|hacer transbordo|aktarma yapmak
+einsteigen|salire a bordo|to board|subir|binmek
+aussteigen|scendere|to get off|bajar|inmek
+abfahren|partire|to depart|salir|kalkmak
+ankommen|arrivare|to arrive|llegar|varmak
+""")),
+    "💼 Lavoro, ufficio e burocrazia": ("Impiego, contratti e uffici pubblici", "Il lessico burocratico tedesco segue moduli e scadenze precise: conoscere questi termini aiuta a leggere una busta paga, un contratto o una lettera dell'ufficio pubblico.", parse_terms("""
+die Arbeit|il lavoro|work|el trabajo|iş
+der Arbeitgeber|il datore di lavoro|employer|el empleador|işveren
+der Arbeitnehmer|il dipendente|employee|el empleado|çalışan
+der Kollege|il collega|colleague|el colega|meslektaş
+der Chef|il capo|boss|el jefe|patron
+das Büro|l'ufficio|office|la oficina|ofis
+der Vertrag|il contratto|contract|el contrato|sözleşme
+das Gehalt|lo stipendio|salary|el salario|maaş
+die Bewerbung|la candidatura|job application|la solicitud de empleo|iş başvurusu
+der Lebenslauf|il curriculum|CV|el currículum|özgeçmiş
+das Vorstellungsgespräch|il colloquio|job interview|la entrevista de trabajo|iş görüşmesi
+die Kündigung|il licenziamento|dismissal|el despido|işten çıkarma
+der Urlaub|le ferie|holiday|las vacaciones|tatil
+die Überstunde|lo straordinario|overtime|la hora extra|fazla mesai
+das Amt|l'ufficio pubblico|public office|la oficina pública|resmi daire
+das Finanzamt|l'ufficio delle imposte|tax office|la oficina de impuestos|vergi dairesi
+die Anmeldung|la registrazione di residenza|residence registration|el empadronamiento|ikamet kaydı
+der Antrag|la domanda|application|la solicitud|başvuru
+das Formular|il modulo|form|el formulario|form
+die Unterschrift|la firma|signature|la firma|imza
+der Ausweis|il documento d'identità|ID card|el documento de identidad|kimlik
+der Reisepass|il passaporto|passport|el pasaporte|pasaport
+die Steuer|la tassa|tax|el impuesto|vergi
+die Frist|la scadenza|deadline|el plazo|son tarih
+die Rente|la pensione|pension|la pensión|emeklilik maaşı
+die Behörde|l'ente pubblico|public authority|la autoridad|kurum
+sich bewerben|candidarsi|to apply for a job|postularse|başvurmak
+kündigen|licenziare/dimettersi|to dismiss/resign|despedir/renunciar|işten çıkarmak
 """)),
 }
 
@@ -2496,6 +2718,10 @@ SUBJECT_LABELS = {
     "🗺️ Geografia e società": {"it": "Geografia e società", "en": "Geography and society", "es": "Geografía y sociedad", "tr": "Coğrafya ve toplum"},
     "🧮 Matematica e scienze": {"it": "Matematica e scienze", "en": "Mathematics and science", "es": "Matemáticas y ciencias", "tr": "Matematik ve bilim"},
     "🩺 Corpo e salute": {"it": "Corpo e salute", "en": "Body and health", "es": "Cuerpo y salud", "tr": "Vücut ve sağlık"},
+    "🏠 Casa e vita quotidiana": {"it": "Casa e vita quotidiana", "en": "Home and daily life", "es": "Casa y vida cotidiana", "tr": "Ev ve günlük yaşam"},
+    "🍳 Cucina, cibo e pasti": {"it": "Cucina, cibo e pasti", "en": "Kitchen, food and meals", "es": "Cocina, comida y comidas", "tr": "Mutfak, yemek ve öğünler"},
+    "🚌 Trasporti e mobilità": {"it": "Trasporti e mobilità", "en": "Transport and mobility", "es": "Transporte y movilidad", "tr": "Ulaşım ve hareketlilik"},
+    "💼 Lavoro, ufficio e burocrazia": {"it": "Lavoro, ufficio e burocrazia", "en": "Work, office and bureaucracy", "es": "Trabajo, oficina y burocracia", "tr": "İş, ofis ve bürokrasi"},
 }
 
 SUBJECT_INTROS = {
