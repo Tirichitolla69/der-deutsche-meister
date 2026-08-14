@@ -12,6 +12,7 @@ from dataclasses import dataclass
 
 import streamlit as st
 import streamlit.components.v1 as components
+from textbook_theory_a1_b2 import render_textbook_unit
 
 
 
@@ -2481,6 +2482,7 @@ def render_course(level: str, language: str) -> None:
             st.markdown(card, unsafe_allow_html=True)
             examples = [{"de": line, "it": "Esempio da ascoltare", "en": "Listen to the example", "es": "Escucha el ejemplo", "tr": "Örneği dinleyin"} for line in topic.examples]
             speakable_grid(examples, language, columns=2, detail_key="translation")
+            render_textbook_unit(st, level, topic_index, language)
     with tab_test:
         render_test(level, [q for q in QUESTION_BANK if q["level"] == level], language, f"{level} · {tx('test')}")
     with tab_goals:
@@ -3046,11 +3048,40 @@ def render_verbs(language: str) -> None:
         speakable_verb_table(chunk, language)
 
 
+CURRICULUM_SOURCES = {
+    "it": """**Allineamento usato per questo manuale**
+
+- [Goethe-Institut — livelli A1–C2 e descrittori QCER](https://www.goethe.de/de/spr/kur/stu.html): obiettivi comunicativi e progressione per livello.
+- [vhs-Lernportal — panoramica dei corsi](https://www.vhs-lernportal.de/wws/kursangebot.php) e [programma B2 Beruf: temi e grammatica](https://www.vhs-lernportal.de/wws/bin/4007242-4008690-2-dvv_grammatiklisten_b2.pdf): scenari quotidiani/professionali e strutture da A1 a B2.
+- [BAMF — corsi di tedesco per il lavoro](https://www.bamf.de/DE/Themen/Integration/ZugewanderteTeilnehmende/DeutschBeruf/deutsch-beruf.html): riferimento per la componente professionale B2.
+- [Anerkennung in Deutschland — FAQ sul riconoscimento](https://www.anerkennung-in-deutschland.de/html/de/service/faq.php): IHK FOSA è un contesto di riconoscimento professionale, non un programma linguistico. I requisiti vanno verificati per professione e procedura.""",
+    "en": """**Curricular alignment used in this handbook**
+
+- [Goethe-Institut — A1–C2 levels and CEFR descriptors](https://www.goethe.de/de/spr/kur/stu.html): communicative aims and level progression.
+- [vhs-Lernportal — course overview](https://www.vhs-lernportal.de/wws/kursangebot.php) and [B2 Beruf topics and grammar](https://www.vhs-lernportal.de/wws/bin/4007242-4008690-2-dvv_grammatiklisten_b2.pdf): everyday/professional scenarios and structures from A1 to B2.
+- [BAMF — German for work courses](https://www.bamf.de/DE/Themen/Integration/ZugewanderteTeilnehmende/DeutschBeruf/deutsch-beruf.html): reference for the professional B2 component.
+- [Recognition in Germany — FAQ](https://www.anerkennung-in-deutschland.de/html/de/service/faq.php): IHK FOSA is a professional-recognition context, not a language syllabus. Verify requirements for the profession and procedure.""",
+    "es": """**Alineación curricular de este manual**
+
+- [Goethe-Institut — niveles A1–C2 y descriptores MCER](https://www.goethe.de/de/spr/kur/stu.html).
+- [vhs-Lernportal — visión general](https://www.vhs-lernportal.de/wws/kursangebot.php) y [temas y gramática B2 Beruf](https://www.vhs-lernportal.de/wws/bin/4007242-4008690-2-dvv_grammatiklisten_b2.pdf).
+- [BAMF — alemán para el trabajo](https://www.bamf.de/DE/Themen/Integration/ZugewanderteTeilnehmende/DeutschBeruf/deutsch-beruf.html).
+- [Reconocimiento en Alemania — FAQ](https://www.anerkennung-in-deutschland.de/html/de/service/faq.php): IHK FOSA es contexto de reconocimiento, no programa lingüístico.""",
+    "tr": """**Bu el kitabındaki müfredat uyumu**
+
+- [Goethe-Institut — A1–C2 düzeyleri ve CEFR tanımlayıcıları](https://www.goethe.de/de/spr/kur/stu.html).
+- [vhs-Lernportal — kurslara genel bakış](https://www.vhs-lernportal.de/wws/kursangebot.php) ve [B2 Beruf konuları ve dilbilgisi](https://www.vhs-lernportal.de/wws/bin/4007242-4008690-2-dvv_grammatiklisten_b2.pdf).
+- [BAMF — meslek için Almanca](https://www.bamf.de/DE/Themen/Integration/ZugewanderteTeilnehmende/DeutschBeruf/deutsch-beruf.html).
+- [Almanya'da tanınma — SSS](https://www.anerkennung-in-deutschland.de/html/de/service/faq.php): IHK FOSA dil müfredatı değil, meslekî tanınma bağlamıdır.""",
+}
+
+
 def render_about() -> None:
     st.header(tx("about"))
     st.markdown(f"<div class='card chapter'><h3>{html.escape(tx('method_title'))}</h3><p>{html.escape(tx('method_text'))}</p></div>", unsafe_allow_html=True)
     st.markdown("#### " + tx("sources"))
     st.markdown(tx("source_links"))
+    st.markdown(CURRICULUM_SOURCES[language])
     st.markdown("#### " + tx("pronunciation_how"))
     st.markdown(tx("pronunciation_text"))
     st.markdown(f"<p class='source'>{tx('source_note')}</p>", unsafe_allow_html=True)
