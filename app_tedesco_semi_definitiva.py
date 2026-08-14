@@ -12,6 +12,7 @@ from dataclasses import dataclass
 
 import streamlit as st
 import streamlit.components.v1 as components
+from fluency_lab import render_fluency_lab
 from textbook_theory_a1_b2 import render_textbook_unit
 
 
@@ -105,7 +106,15 @@ st.markdown(
 # perché non è detto che chi apre l'app sappia l'italiano); la scelta resta
 # poi memorizzata anche nelle schermate successive, tramite session_state.
 # ---------------------------------------------------------------------------
-APP_PASSWORD = st.secrets.get("APP_PASSWORD", os.environ.get("APP_PASSWORD", "lala31"))
+# ``st.secrets.get`` prova a leggere il file anche quando non esiste: in una
+# distribuzione locale pulita questo generava un errore prima della schermata
+# di accesso. L'ambiente resta la prima alternativa; un secrets.toml, se
+# presente, ha la precedenza.
+APP_PASSWORD = os.environ.get("APP_PASSWORD", "lala31")
+try:
+    APP_PASSWORD = st.secrets["APP_PASSWORD"]
+except Exception:  # nessun secrets.toml o chiave non configurata
+    pass
 
 LANGUAGES = {"English": "en", "Italiano": "it", "Türkçe": "tr", "Español": "es"}
 
@@ -3105,6 +3114,7 @@ st.session_state["language"] = LANGUAGES[language_label]
 language = st.session_state["language"]
 
 sections = {
+    "lab": "Laboratorio di padronanza · pratica attiva",
     "A1": "🟢 A1 · " + COURSES["A1"]["title"][language],
     "A2": "🔵 A2 · " + COURSES["A2"]["title"][language],
     "B1": "🟠 B1 · " + COURSES["B1"]["title"][language],
@@ -3124,7 +3134,9 @@ st.sidebar.caption("🔊 de-DE SpeechSynthesis")
 
 st.markdown(f"<section class='hero'><h1>🇩🇪 Der Deutsche Meister</h1><p>{html.escape(tx('tagline'))} · A1–B2</p></section>", unsafe_allow_html=True)
 
-if section in COURSES:
+if section == "lab":
+    render_fluency_lab(st, QUESTION_BANK, VOCAB_BY_LEVEL)
+elif section in COURSES:
     render_course(section, language)
 elif section == "subjects":
     render_subjects(language)
