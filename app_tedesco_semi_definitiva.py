@@ -12,8 +12,925 @@ from dataclasses import dataclass
 
 import streamlit as st
 import streamlit.components.v1 as components
-from fluency_lab import render_fluency_lab
-from textbook_theory_a1_b2 import render_textbook_unit
+from datetime import date, timedelta
+from pathlib import Path
+from typing import Any
+import re
+
+# Il corso è autosufficiente: non richiede moduli Python locali aggiuntivi.
+# Questa scelta evita errori ModuleNotFoundError nelle pubblicazioni Streamlit
+# dove viene caricato soltanto il file principale.
+
+Unit = dict[str, Any]
+
+
+UNITS: dict[str, tuple[Unit, ...]] = {
+    "A1": (
+        {
+            "title": "Costruire la frase: il principio V2",
+            "outcome": "Formulare e capire affermazioni brevi cambiando il focus senza perdere l'ordine tedesco.",
+            "sections": (
+                ("Mappa", "In una frase principale il primo campo (**Vorfeld**) contiene un solo blocco di informazione; segue il verbo finito, poi il resto: `Heute | lerne | ich Deutsch.` Il blocco iniziale puÃ² essere soggetto, tempo, luogo o oggetto. Non Ã¨ una regola della *seconda parola*: `Am Wochenende` Ã¨ un unico blocco."),
+                ("Procedura", "1. Scegli che cosa vuoi mettere in evidenza. 2. Mettilo nel Vorfeld. 3. Coniuga il verbo e mettilo subito dopo. 4. Aggiungi soggetto e complementi. Confronta: `Ich arbeite heute zu Hause.` / `Heute arbeite ich zu Hause.` / `Zu Hause arbeite ich heute.`"),
+                ("Contrasto utile", "La domanda sÃ¬/no non ha un Vorfeld: il verbo apre la frase, `Arbeitest du heute?` Le domande con parola interrogativa invece mantengono il modello: `Wann arbeitest du heute?` Non dire *Heute ich arbeite*: il soggetto non puÃ² rimanere davanti al verbo quando il tempo occupa il Vorfeld."),
+                ("Allenamento", "Trasforma `Ich fahre um acht Uhr zur Arbeit.` mettendo prima `Um acht Uhr`, poi `Zur Arbeit`. Infine rispondi in una frase completa a `Wo wohnst du?`. Prima di parlare, indica a voce: Vorfeld â€“ verbo â€“ resto."),
+                ("Autocontrollo", "In `Morgen besucht meine Schwester ihre Freundin` il verbo Ã¨ `besucht`; `Morgen` Ã¨ tutto il primo campo. Se riesci a individuare questi due elementi in ogni frase, stai applicando la regola."),
+            ),
+        },
+        {
+            "title": "IdentitÃ , persone e verbi ad alta frequenza",
+            "outcome": "Presentarsi, parlare di persone e possesso usando con sicurezza pronomi, sein, haben e verbi regolari.",
+            "sections": (
+                ("Mappa", "Impara il nome insieme al pronome e alla forma verbale: `ich bin`, `du bist`, `er/sie/es ist`, `wir sind`, `ihr seid`, `sie/Sie sind`; `ich habe`, `du hast` ecc. La maiuscola in `Sie` segnala la forma di cortesia; il verbo Ã¨ plurale: `Kommen Sie aus Italien?`"),
+                ("Forma e uso", "Per i verbi regolari togli `-en` e aggiungi `-e, -st, -t, -en, -t, -en`: `ich arbeite, du arbeitest, er arbeitet ...` Dopo radici in `-t/-d` compare spesso una `-e-` di appoggio: `du arbeitest`. L'etÃ  si esprime con `sein`: `Ich bin 30 Jahre alt`, non con *haben*."),
+                ("Blocchi pronti", "Memorizza frasi che puoi adattare: `Ich heiÃŸe â€¦ und komme aus â€¦`; `Ich wohne in â€¦`; `Ich bin von Beruf â€¦`; `Ich habe zwei Geschwister.` In una conversazione, chiedi una sola informazione per volta e reagisci: `Ah, interessant!` / `Ich auch.`"),
+                ("Allenamento", "Scrivi una carta d'identitÃ  di cinque frasi e poi cambiala dal punto di vista di una terza persona: `Das ist Elena. Sie ist â€¦` Alterna `er`, `sie` ed `es`, perchÃ© *sie* puÃ² voler dire lei o loro: il verbo risolve l'ambiguitÃ  (`sie ist` / `sie sind`)."),
+                ("Autocontrollo", "Completa senza guardare: `Wir ___ aus Rom, aber wir ___ in Berlin.` Soluzione: `sind / wohnen`. Se puoi dire le forme di *sein* senza tradurre, hai una base solida per tutti i tempi successivi."),
+            ),
+        },
+        {
+            "title": "Nomi, articoli e accusativo",
+            "outcome": "Riconoscere soggetto e oggetto diretto e scegliere correttamente gli articoli piÃ¹ frequenti.",
+            "sections": (
+                ("Mappa", "Ogni nome entra nel quaderno con tre dati: `der Tisch â€“ die Tische â€“ il tavolo`; `die Lampe â€“ die Lampen`; `das Buch â€“ die BÃ¼cher`. Il genere Ã¨ lessicale: non indovinarlo dalla traduzione. Tutti i nomi comuni iniziano con la maiuscola."),
+                ("Schema", "Al nominativo: `der/die/das/die`. All'accusativo cambia in modo evidente il maschile: `den/die/das/die`; con l'indeterminativo `einen/eine/ein/â€“`. Quindi: `Der Mann kauft einen Kaffee.` Il soggetto Ã¨ `der Mann`; ciÃ² che compra Ã¨ `einen Kaffee`."),
+                ("Quando serve", "Cerca l'accusativo dopo verbi come `haben, brauchen, sehen, kaufen, finden, mÃ¶gen` e dopo preposizioni come `fÃ¼r, ohne, durch, gegen, um`. Non affidarti soltanto all'ordine: `Den Kaffee kauft der Mann` mantiene lo stesso significato perchÃ© `den` segnala l'oggetto."),
+                ("Allenamento", "Etichetta in `Ich suche den Bahnhof` chi agisce e che cosa Ã¨ cercato. Poi crea quattro frasi, una per ogni genere, con `Ich habe â€¦` e sostituisci l'articolo definito con quello indeterminativo quando Ã¨ possibile."),
+                ("Autocontrollo", "Dopo `Ich sehe â€¦`, scegli `den neuen Film`, `die neue Stadt`, `das neue Museum`, `die neuen HÃ¤user`. Nota: il cambiamento piÃ¹ visibile Ã¨ nel maschile; non aggiungere `-n` al nome singolare."),
+            ),
+        },
+        {
+            "title": "Chiedere, negare e ottenere informazioni",
+            "outcome": "Gestire piccoli scambi: fare domande chiare, rispondere e negare correttamente.",
+            "sections": (
+                ("Mappa", "Le W-Fragen richiedono un'informazione: `Wer? Was? Wo? Wohin? Woher? Wann? Wie? Warum?` La formula Ã¨ `W-Wort + verbo + soggetto + resto`: `Wo wohnst du?` Le domande sÃ¬/no iniziano invece con il verbo: `Wohnst du in KÃ¶ln?`"),
+                ("Kein o nicht?", "Usa `kein` per negare un nome senza articolo determinativo: `Ich habe kein Auto`, `Wir kaufen keine Milch`. `kein` si comporta come `ein` e si declina: `keinen Kaffee`. Usa `nicht` per verbo, aggettivo, avverbio o un dettaglio: `Ich komme nicht.` / `Das ist nicht teuer.` / `Ich wohne nicht in Bonn.`"),
+                ("Risposte naturali", "Una risposta completa riprende il verbo: `Kommst du morgen? â€“ Ja, ich komme morgen.` Per correggere una supposizione, contrasta il dettaglio: `Nein, nicht morgen, sondern am Freitag.` Le particelle `ja, nein, doch` sono importanti: `doch` contraddice una frase negativa, `Du sprichst nicht Deutsch. â€“ Doch!`"),
+                ("Allenamento", "Trasforma `Du hast Zeit` in domanda sÃ¬/no, poi crea tre W-Fragen con informazioni diverse. Negare: `Ich habe Zeit` â†’ `Ich habe keine Zeit`; `Ich lerne heute` â†’ `Ich lerne heute nicht.` Spiega a voce perchÃ© la parola negativa cambia."),
+                ("Autocontrollo", "La frase *Ich habe nicht Geld* Ã¨ errata: per il nome non determinato serve `kein Geld`. In `Ich kaufe keinen Computer` l'accusativo maschile Ã¨ segnalato da `keinen`."),
+            ),
+        },
+        {
+            "title": "La parentesi verbale: modali e prefissi separabili",
+            "outcome": "Esprimere capacitÃ , obbligo e intenzione e comprendere frasi in cui un elemento verbale va alla fine.",
+            "sections": (
+                ("Mappa", "Con `kÃ¶nnen, mÃ¼ssen, wollen, dÃ¼rfen, sollen, mÃ¶gen/mÃ¶chten` il modale Ã¨ coniugato in seconda posizione e l'infinito resta alla fine: `Ich muss heute arbeiten.` Questa Ã¨ la prima forma della **Satzklammer**, la parentesi verbale."),
+                ("Prefissi", "Nei verbi separabili il prefisso va alla fine nella principale: `aufstehen â†’ Ich stehe um sieben auf`; `anrufen â†’ Sie ruft ihre Mutter an`. Nel dizionario il separabile Ã¨ spesso indicato con un accento: `AUFstehen`. Non separare verbi non separabili come `besuchen`: `Ich besuche â€¦`, non *suche â€¦ be*."),
+                ("Scelte di registro", "`mÃ¶chte` Ã¨ la richiesta o desiderio cortese: `Ich mÃ¶chte einen Termin.` Non Ã¨ identico a `wollen`, che esprime volontÃ  piÃ¹ diretta: `Ich will gehen.` Per un cartello o un regolamento, `mÃ¼ssen` comunica obbligo; `dÃ¼rfen` permesso o divieto (`Hier darf man nicht rauchen`)."),
+                ("Allenamento", "Completa: `Am Samstag ___ wir im Supermarkt ___. (einkaufen)`; `Du ___ deinen Ausweis ___. (mitbringen / mÃ¼ssen)`. Evidenzia il verbo finito con un colore e il secondo elemento verbale con un altro."),
+                ("Autocontrollo", "In `Kannst du mir helfen?` il soggetto Ã¨ dopo il verbo perchÃ© Ã¨ una domanda; `helfen` Ã¨ in fondo. Se il secondo pezzo non Ã¨ alla fine, ricontrolla la frase."),
+            ),
+        },
+        {
+            "title": "Tempo, numeri e routine: parlare con precisione",
+            "outcome": "Fissare appuntamenti, indicare date, orari e frequenza senza tradurre parola per parola.",
+            "sections": (
+                ("Mappa", "Per il tempo usa blocchi memorizzabili: `am Montag`, `um 8 Uhr`, `von 9 bis 17 Uhr`, `im Mai`, `heute Morgen`, `jeden Tag`. Metti normalmente il tempo nel Vorfeld o prima dei complementi di luogo: `Am Montag arbeite ich im BÃ¼ro.`"),
+                ("Orari e numeri", "I numeri da 21 in poi invertono unitÃ  e decine: `einundzwanzig`, `fÃ¼nfundvierzig`. `halb acht` significa le 7:30, cioÃ¨ la metÃ  **prima** delle otto; `Viertel nach sieben` 7:15 e `Viertel vor sieben` 6:45. Per fissare un incontro, usa anche la forma digitale: `um sieben Uhr dreiÃŸig`."),
+                ("Routine", "I verbi di routine rendono la grammatica automatica: `aufstehen, frÃ¼hstÃ¼cken, anfangen, fahren, arbeiten, einkaufen, schlafen`. Collega le frasi con `dann` e `danach`, ricordando V2: `Dann fahre ich zur Arbeit.`"),
+                ("Allenamento", "Descrivi una giornata con sei frasi: inizia almeno due frasi con un'indicazione di tempo e usa un verbo separabile. Poi fissa un appuntamento: giorno, ora, luogo, durata e conferma: `Passt dir â€¦? â€“ Ja, das passt.`"),
+                ("Autocontrollo", "Scrivi 7:30 in due modi e controlla il significato di `halb neun`. Se pensi alle 8:30, trasferisci la logica italiana: in tedesco Ã¨ 8:30 solo `halb neun`."),
+            ),
+        },
+        {
+            "title": "Possesso, istruzioni e cortesia",
+            "outcome": "Parlare di ciÃ² che appartiene a qualcuno e dare istruzioni semplici nel registro adeguato.",
+            "sections": (
+                ("Mappa", "`mein, dein, sein, ihr, unser, euer, Ihr` non concordano con il possessore ma con la cosa posseduta: `sein Bruder`, `seine Schwester`, `sein Kind`. Al maschile accusativo: `meinen Ausweis`. Osserva `euer â†’ eure/eurem`, dove spesso cade la seconda `e`."),
+                ("Imperativo", "Con `du`: radice senza `-st`, `Komm!`, `Lies!`, `Nimm!`; con `ihr`: forma di `ihr`, `Kommt!`; con `Sie`: infinito + pronome, `Kommen Sie bitte!` Le istruzioni professionali e pubbliche preferiscono la forma cortese o l'infinito da cartello: `Bitte warten`, `Nicht rauchen`."),
+                ("Cortesia", "Aggiungi `bitte`, `bitte mal`, `kÃ¶nnen Sie â€¦?` per una richiesta. Un imperativo nudo puÃ² suonare brusco fuori da una situazione familiare. Formula sicura: `KÃ¶nnen Sie bitte Ihren Namen sagen?`"),
+                ("Allenamento", "Descrivi una borsa con cinque oggetti: `Das ist mein â€¦ / Das sind meine â€¦` Poi trasforma istruzioni dirette in cortesi: `Ã–ffnen Sie die TÃ¼r.` â†’ `KÃ¶nnen Sie bitte die TÃ¼r Ã¶ffnen?`"),
+                ("Autocontrollo", "`ihre Adresse` puÃ² significare la sua (di lei), la loro o la Sua: il contesto e la maiuscola chiariscono. Verifica sempre il nome posseduto prima di scegliere la desinenza."),
+            ),
+        },
+    ),
+    "A2": (
+        {
+            "title": "Raccontare il passato con il Perfekt",
+            "outcome": "Riferire esperienze, spostamenti e tappe biografiche usando ausiliare e participio in modo affidabile.",
+            "sections": (
+                ("Mappa", "Il Perfekt Ã¨ `haben/sein` coniugato in seconda posizione + `Partizip II` alla fine: `Ich habe gearbeitet.` / `Wir sind gefahren.` Nei dialoghi quotidiani Ã¨ il principale tempo del passato. La parentesi verbale torna: ausiliare all'inizio della struttura, participio in chiusura."),
+                ("Costruzione", "Regolari: `ge- + radice + -t` (`gemacht`); molti irregolari: `ge- + radice + -en` (`gesehen, geschrieben`). I verbi in `-ieren` non prendono `ge-`: `studiert`. I prefissi inseparabili `be-, emp-, ent-, er-, ge-, miss-, ver-, zer-` non lo prendono: `besucht, verstanden`. Impara ogni verbo forte in tre forme: `fahren â€“ fuhr â€“ ist gefahren`."),
+                ("Haben o sein?", "Di solito `sein` con movimento da un luogo a un altro o cambiamento di stato: `gehen, kommen, fahren, aufstehen, einschlafen, bleiben`. Non basta il movimento fisico: `Ich habe getanzt` usa `haben`. Se il verbo ha oggetto, in genere usa `haben`: `Ich habe das Auto gefahren.`"),
+                ("Allenamento", "Racconta ieri in quattro sequenze: inizio, spostamento, attivitÃ , fine. Evidenzia l'ausiliare e cerchia il participio. Trasforma `Wir fahren nach Hamburg` in Perfekt e spiega perchÃ© scegli `sein`."),
+                ("Autocontrollo", "`Ich habe nach Hause gegangen` Ã¨ errato: `Ich bin nach Hause gegangen`. PerÃ² `Ich habe den ganzen Tag gearbeitet` Ã¨ corretto anche se sei andato al lavoro: conta il verbo, non il contesto."),
+            ),
+        },
+        {
+            "title": "Dativo, accusativo e destinatario dell'azione",
+            "outcome": "Dire chi riceve qualcosa e che cosa viene trasferito, comprendendo articoli e pronomi piÃ¹ comuni.",
+            "sections": (
+                ("Mappa", "Pensa al modello `jemandem etwas geben`: persona/destinatario al dativo, cosa all'accusativo. `Ich gebe dem Kind den Ball.` Articoli definiti al dativo: `dem, der, dem, den + -n` al plurale: `mit den Kindern`. Indeterminativi: `einem, einer, einem`."),
+                ("Verbi da imparare in coppia", "Dativo + accusativo: `geben, schicken, zeigen, erklÃ¤ren, bringen, kaufen`. Solo dativo: `helfen, danken, gefallen, gehÃ¶ren, antworten`. Non dire *ich helfe dich*: `Ich helfe dir`. Impara il verbo con una frase-tipo, non con la sola traduzione."),
+                ("Ordine", "Con due nomi, spesso dativo prima di accusativo: `Ich gebe meiner Kollegin die Unterlagen.` Con pronome personale, normalmente il pronome va prima: `Ich gebe ihr die Unterlagen.` Se entrambi sono pronomi: `Ich gebe sie ihr` (accusativo prima del dativo)."),
+                ("Allenamento", "Completa una mini-consegna: chi invia che cosa a chi? `Der Chef schickt â€¦` Cambia poi i nomi in pronomi: `Der Chef schickt die E-Mail der Kollegin` â†’ `Er schickt sie ihr.`"),
+                ("Autocontrollo", "Chiediti sempre due cose: *a chi?* = dativo; *che cosa?* = accusativo. Se il verbo Ã¨ `helfen`, non serve un secondo oggetto: `Kannst du mir helfen?`"),
+            ),
+        },
+        {
+            "title": "Luogo e movimento: le WechselprÃ¤positionen",
+            "outcome": "Distinguere posizione e direzione per descrivere abitazione, cittÃ , spostamenti e indicazioni.",
+            "sections": (
+                ("Mappa", "`an, auf, hinter, in, neben, Ã¼ber, unter, vor, zwischen` possono reggere dativo o accusativo. La domanda decide: **Wo?** posizione â†’ dativo, `Das Bild hÃ¤ngt an der Wand`; **Wohin?** destinazione/cambiamento di posto â†’ accusativo, `Ich hÃ¤nge das Bild an die Wand`."),
+                ("Non Ã¨ il movimento", "Non chiederti semplicemente se qualcuno si muove. `Ich laufe im Park` risponde *dove?* quindi dativo, anche se cammino. `Ich laufe in den Park` risponde *verso dove?* quindi accusativo. Questa coppia Ã¨ la prova migliore."),
+                ("Preposizioni fisse", "Altre preposizioni richiedono sempre una forma: dativo `aus, bei, mit, nach, seit, von, zu`; accusativo `durch, fÃ¼r, gegen, ohne, um`. Le destinazioni-cittÃ  senza articolo usano `nach Berlin`; edifici/persone spesso `zu`: `zum Arzt`, `zur Arbeit`."),
+                ("Allenamento", "Disegna una stanza semplice e descrivi tre oggetti con `wo?`; poi spostane due con `wohin?`. Produci coppie: `Das Handy liegt auf dem Tisch. â€“ Ich lege das Handy auf den Tisch.`"),
+                ("Autocontrollo", "`in dem` diventa spesso `im`; `in das` diventa `ins`; `an dem` â†’ `am`, `an das` â†’ `ans`. La contrazione non cambia il caso: `im` Ã¨ dativo, `ins` accusativo."),
+            ),
+        },
+        {
+            "title": "Confrontare, motivare e collegare le idee",
+            "outcome": "Esprimere preferenze e differenze, dando una ragione in frasi chiare e collegate.",
+            "sections": (
+                ("Mappa", "Comparativo: aggettivo + `-er` + `als`: `Berlin ist grÃ¶ÃŸer als Bonn.` Uguaglianza: `so â€¦ wie`: `Der Kurs ist so interessant wie â€¦` Superlativo attributivo: `der beste Kurs`; avverbiale: `am besten`. Alcuni sono irregolari: `gut â€“ besser â€“ am besten`, `viel â€“ mehr â€“ am meisten`."),
+                ("Tre modi per la causa", "`weil` apre una subordinata e manda il verbo alla fine: `Ich lerne Deutsch, weil ich in Deutschland arbeite.` `denn` coordina e conserva V2: `â€¦, denn ich arbeite â€¦` `deshalb` occupa il Vorfeld della nuova principale: `Ich arbeite in Deutschland. Deshalb lerne ich Deutsch.`"),
+                ("Scelta", "Usa `weil` quando la ragione appartiene alla stessa frase; `deshalb` quando vuoi presentarla come conseguenza nella frase seguente. Evita di mettere due verbi finiti nello stesso segmento: dopo `weil` il verbo coniugato deve chiudere la subordinata."),
+                ("Allenamento", "Confronta due cittÃ  o due lavori con tre frasi: una con `als`, una con `so â€¦ wie`, una con superlativo. Poi dai la stessa ragione con `weil`, `denn` e `deshalb` e osserva dove va il verbo."),
+                ("Autocontrollo", "*weil ich lerne Deutsch* Ã¨ errato: `weil ich Deutsch lerne`. *Deshalb ich lerne Deutsch* Ã¨ errato: `Deshalb lerne ich Deutsch`, perchÃ© anche qui vale V2."),
+            ),
+        },
+        {
+            "title": "Subordinate essenziali: dass, weil, wenn, obwohl",
+            "outcome": "Collegare eventi, opinioni, condizioni e contrasti con una struttura di frase stabile.",
+            "sections": (
+                ("Mappa", "Una congiunzione subordinante apre una frase dipendente e sposta il verbo finito alla fine: `Ich weiÃŸ, dass der Kurs heute beginnt.` Nel blocco principale il verbo resta al suo posto. Segna sempre la virgola: Ã¨ parte della grammatica tedesca scritta."),
+                ("Funzioni", "`dass` introduce contenuto/opinione: `Ich finde, dass â€¦`; `weil` causa; `wenn` condizione o evento ripetuto/futuro: `Wenn ich Zeit habe, â€¦`; `obwohl` contrasto: `Obwohl es regnet, gehe ich spazieren.` Per un fatto singolo nel passato usa spesso `als`: `Als ich klein war, â€¦`"),
+                ("Doppia parentesi", "Con un modale o Perfekt, gli elementi verbali si accumulano alla fine: `â€¦, weil ich morgen arbeiten muss`; `â€¦, weil ich lange gearbeitet habe`. Non aggiungere una coniugazione all'inizio della subordinata."),
+                ("Allenamento", "Unisci coppie di frasi con `dass`, `weil`, `wenn`, `obwohl`. Poi inizia la frase con la subordinata: `Wenn ich Zeit habe, lerne ich.` Nota la virgola e l'inversione nella principale (`lerne ich`, non *ich lerne*)."),
+                ("Autocontrollo", "Trova il verbo finito in `Ich bleibe zu Hause, weil ich krank bin.` Ãˆ `bin`, e chiude la subordinata. In una subordinata breve Ã¨ facile; allenati anche con quelle lunghe."),
+            ),
+        },
+        {
+            "title": "Vita pratica: servizi, salute e comunicazione formale",
+            "outcome": "Gestire appuntamenti, richieste e problemi quotidiani con frasi comprensibili e registro adeguato.",
+            "sections": (
+                ("Mappa", "In un servizio pubblico o sanitario chiarisci sempre: chi sei, perchÃ© contatti, qual Ã¨ il problema, che cosa chiedi e quali dati offri. Formula sicura: `Guten Tag, mein Name ist â€¦ Ich mÃ¶chte einen Termin vereinbaren, weil â€¦`"),
+                ("Lessico in azione", "Impara le combinazioni: `einen Termin vereinbaren/verschieben/absagen`, `ein Formular ausfÃ¼llen`, `einen Antrag stellen`, `eine Krankmeldung abgeben`, `ein Rezept bekommen`. Il verbo dÃ  la struttura; il nome isolato non basta per usare la parola."),
+                ("Passato frequente", "Nel parlato `sein, haben` e i modali compaiono anche al PrÃ¤teritum: `Ich hatte`, `ich war`, `ich konnte`, `ich musste`. Sono piÃ¹ rapidi e naturali di *ich habe gehabt* nei dialoghi. Il Perfekt resta invece normale per molti altri verbi."),
+                ("Allenamento", "Scrivi un messaggio di 60â€“80 parole per spostare un appuntamento: saluto, riferimento, motivazione, nuova proposta, ringraziamento e formula di chiusura. Poi esercita a voce una telefonata con una domanda di chiarimento: `KÃ¶nnten Sie das bitte wiederholen?`"),
+                ("Autocontrollo", "Una richiesta non Ã¨ un ordine: preferisci `KÃ¶nnten Sie â€¦?`, `Ich hÃ¤tte gern â€¦`, `WÃ¤re es mÃ¶glich, â€¦?` Se manca una delle cinque informazioni della mappa, il destinatario deve fare una domanda in piÃ¹."),
+            ),
+        },
+        {
+            "title": "Pronomi e verbi riflessivi",
+            "outcome": "Parlare di sÃ©, routine e relazioni usando i pronomi nel caso giusto e riconoscendo i verbi riflessivi.",
+            "sections": (
+                ("Mappa", "Accusativo: `mich, dich, ihn, sie, es, uns, euch, sie/Sie`; dativo: `mir, dir, ihm, ihr, ihm, uns, euch, ihnen/Ihnen`. Sostituisci un nome giÃ  noto per evitare ripetizioni: `Ich sehe den Arzt. Ich sehe ihn.`"),
+                ("Riflessivo", "Alcuni verbi richiedono il pronome riflessivo: `sich freuen, sich interessieren, sich erinnern, sich treffen`. Spesso l'accusativo: `Ich freue mich`; talvolta dativo con un altro oggetto: `Ich wasche mir die HÃ¤nde` (le mani sono l'accusativo, la persona il dativo)."),
+                ("Posizione", "Nella principale il pronome breve va presto dopo il verbo: `Ich treffe mich heute mit Anna.` Con modale: `Ich mÃ¶chte mich heute mit Anna treffen.` Impara `sich` insieme alla preposizione quando necessaria: `sich freuen auf/Ã¼ber`, `sich interessieren fÃ¼r`."),
+                ("Allenamento", "Trasforma cinque nomi in pronomi: `Ich rufe meine Mutter an` â†’ `Ich rufe sie an`. Poi descrivi la mattina con tre riflessivi e crea una domanda: `Worauf freust du dich?`"),
+                ("Autocontrollo", "Non ogni azione su di sÃ© Ã¨ riflessiva come in italiano: si dice `Ich wasche meine Haare` oppure `Ich wasche mir die Haare`, non necessariamente *ich wasche mich die Haare*. Controlla il verbo nel dizionario."),
+            ),
+        },
+    ),
+    "B1": (
+        {
+            "title": "Coesione: subordinare, connettere, sintetizzare",
+            "outcome": "Costruire un testo coerente con cause, condizioni, scopi e conseguenze.",
+            "sections": (
+                ("Mappa", "A B1 non basta una successione di frasi corrette: il lettore deve vedere il rapporto logico. Alterna congiunzioni (`weil, obwohl, falls, wÃ¤hrend`) e avverbi connettivi (`deshalb, trotzdem, auÃŸerdem, dann`). Le prime spostano il verbo alla fine; i secondi occupano il Vorfeld e mantengono V2."),
+                ("Scopo", "Con lo stesso soggetto usa `um â€¦ zu + infinito`: `Ich lerne, um die PrÃ¼fung zu bestehen.` Con soggetti diversi usa `damit`: `Ich erklÃ¤re es langsam, damit alle es verstehen.` Dopo `ohne â€¦ zu` esprimi assenza di azione; dopo `statt/anstatt â€¦ zu`, alternativa."),
+                ("Condizione e concessione", "`falls` Ã¨ una condizione prudente: `Falls Sie Fragen haben, â€¦`; `wenn` Ã¨ piÃ¹ generale. `obwohl` introduce un ostacolo reale, mentre `trotzdem` apre una nuova principale: `Obwohl es regnet, â€¦` / `Es regnet. Trotzdem â€¦`"),
+                ("Allenamento", "Prendi un testo di cinque frasi semplici su un problema al lavoro. Aggiungi almeno una causa, una conseguenza, una condizione e uno scopo. Rileggi e segna ogni verbo finito: deve essere nel posto previsto dalla struttura scelta."),
+                ("Autocontrollo", "Se usi `deshalb`, il verbo viene subito dopo: `Deshalb kann ich â€¦`; se usi `weil`, il verbo chiude: `weil ich â€¦ kann`. Il significato Ã¨ simile, la grammatica no."),
+            ),
+        },
+        {
+            "title": "Passivo e descrizione dei processi",
+            "outcome": "Spiegare procedure, regole e fasi di lavoro mettendo in primo piano l'azione o il risultato.",
+            "sections": (
+                ("Mappa", "Il Vorgangspassiv descrive un processo: `werden + Partizip II`: `Die Rechnung wird geprÃ¼ft.` Il soggetto grammaticale Ã¨ ciÃ² che subisce l'azione. Al passato: `wurde geprÃ¼ft`; al Perfekt: `ist geprÃ¼ft worden`. Con modale: `Die Rechnung muss geprÃ¼ft werden.`"),
+                ("Agente", "Se serve, indica chi agisce con `von` per persone/istituzioni: `Der Antrag wird von der BehÃ¶rde bearbeitet`; `durch` per mezzo/cause: `durch ein Programm`. Spesso l'agente non Ã¨ importante: Ã¨ proprio il motivo per scegliere il passivo."),
+                ("Stato", "`sein + Partizip II` non Ã¨ un processo ma un risultato: `Die TÃ¼r ist geÃ¶ffnet` = la porta Ã¨ aperta. `Die TÃ¼r wird geÃ¶ffnet` = qualcuno la sta aprendo. Questa distinzione evita molte frasi ambigue in istruzioni e report."),
+                ("Allenamento", "Scrivi cinque passaggi per un processo noto (prenotazione, consegna, ricetta): prima attivo, poi passivo. Inserisci un modale e un indicatore di sequenza: `Zuerst â€¦, anschlieÃŸend â€¦, zum Schluss â€¦`."),
+                ("Autocontrollo", "*Die Rechnung wird geprÃ¼ft worden* Ã¨ errato. Presente: `wird geprÃ¼ft`; Perfekt: `ist geprÃ¼ft worden`. Ricorda: nel Perfekt passivo l'ausiliare Ã¨ `sein` e `worden` resta alla fine."),
+            ),
+        },
+        {
+            "title": "Relative: aggiungere informazione con precisione",
+            "outcome": "Unire frasi e descrivere persone, oggetti e luoghi evitando ripetizioni.",
+            "sections": (
+                ("Mappa", "La relativa segue un nome e comincia con pronome relativo: `der, die, das, die`; il verbo finito va alla fine: `Das ist die Kollegin, die heute beginnt.` Il genere e il numero vengono dal nome antecedente; il caso dipende dalla funzione nella relativa."),
+                ("Come scegliere", "`Der Mann, der dort steht` (soggetto); `der Mann, den ich kenne` (oggetto); `der Mann, dem ich helfe` (dativo). Fai due domande: qual Ã¨ l'antecedente? Che funzione ha il pronome nella relativa? Non scegliere il caso dal nome nella frase principale."),
+                ("Forme utili", "Con preposizione: `Die Firma, bei der ich arbeite`; `Das Thema, Ã¼ber das wir sprechen`. Per intere frasi o parole come `alles, etwas, nichts`, spesso `was`: `Alles, was du sagst, ist wichtig.` Luoghi: `der Ort, wo â€¦` Ã¨ comune parlato; nello scritto formale preferisci `an dem/in dem â€¦`."),
+                ("Allenamento", "Unisci: `Ich suche eine Wohnung. Die Wohnung liegt zentral.` Poi: `Das ist die Frau. Ich habe der Frau geschrieben.` Spiega a voce perchÃ© nella seconda relativa serve il dativo."),
+                ("Autocontrollo", "La virgola apre e chiude la relativa. In `Die Unterlagen, die ich gestern geschickt habe, sind angekommen` il verbo `habe` chiude la relativa, mentre `sind` regge la principale."),
+            ),
+        },
+        {
+            "title": "Esprimere e sostenere un'opinione",
+            "outcome": "Partecipare a una discussione rispettosa, distinguendo tesi, ragione, esempio e concessione.",
+            "sections": (
+                ("Mappa", "Una risposta B1 convincente segue un filo: **tesi** (`Meiner Meinung nach â€¦`), **ragione** (`Das liegt daran, dass â€¦`), **esempio** (`Zum Beispiel â€¦`), **conseguenza** (`Deshalb â€¦`) e, se utile, **concessione** (`Zwar â€¦, aber â€¦` / `Einerseits â€¦, andererseits â€¦`)."),
+                ("Registro", "Distingui fatto, opinione e certezza: `Die Statistik zeigt â€¦` non equivale a `Ich finde â€¦`; `wahrscheinlich, vermutlich, mÃ¶glicherweise` riducono l'affermazione. Per dissentire: `Da bin ich nicht ganz deiner Meinung, weil â€¦` oppure `Ich verstehe deinen Punkt, aber â€¦`"),
+                ("Parole di confronto", "Usa `nicht nur â€¦ sondern auch`, `sowohl â€¦ als auch`, `weder â€¦ noch` con elementi paralleli. Evita di mettere molti connettori senza relazione: ogni connettore deve rendere visibile un preciso passaggio di pensiero."),
+                ("Allenamento", "Scegli un tema quotidiano (lavoro da casa, trasporti, smartphone) e parla per 90 secondi usando la mappa. Poi aggiungi un'obiezione e una risposta. Registra l'audio e verifica se hai dato almeno un esempio concreto."),
+                ("Autocontrollo", "Un'opinione senza ragione non Ã¨ un'argomentazione. Se togli `weil/denn/da` e non cambia nulla, forse hai espresso solo una preferenza: aggiungi una prova o una conseguenza."),
+            ),
+        },
+        {
+            "title": "Candidatura, comunicazione di lavoro e riconoscimento",
+            "outcome": "Scrivere una candidatura essenziale e comunicare in modo chiaro in contesti professionali tedeschi.",
+            "sections": (
+                ("Mappa", "Un `Lebenslauf` Ã¨ cronologico, sobrio e verificabile; un `Anschreiben` seleziona ciÃ² che Ã¨ rilevante per l'annuncio: motivo, competenze con esempio, disponibilitÃ . Una e-mail professionale ha oggetto informativo, saluto, richiesta/azione, ringraziamento e `Mit freundlichen GrÃ¼ÃŸen`."),
+                ("Lessico azionabile", "Preferisci verbi concreti: `organisieren, betreuen, prÃ¼fen, dokumentieren, koordinieren, verantworten`. Non scrivere *ich bin sehr motiviert* e basta: `In meiner bisherigen TÃ¤tigkeit habe ich â€¦ koordiniert; deshalb kann ich â€¦` collega prova e risultato."),
+                ("Colloquio", "Rispondi con struttura breve: situazione â€“ compito â€“ azione â€“ risultato. Chiedi chiarimenti con `KÃ¶nnten Sie bitte erlÃ¤utern, â€¦?` e conferma: `Habe ich Sie richtig verstanden, dass â€¦?` Il registro resta formale finchÃ© non viene proposto il `du`."),
+                ("Riconoscimento: confine importante", "IHK FOSA Ã¨ un ente per la valutazione dell'equivalenza di molte qualifiche professionali estere nell'area IHK, non un fornitore di corsi di tedesco. Le esigenze linguistiche dipendono da professione, datore di lavoro, autorizzazioni e misura prevista: il corso prepara a leggere e scrivere documenti, non garantisce requisiti legali."),
+                ("Allenamento", "Adatta tre righe di CV a un annuncio: usa una competenza, un'attivitÃ , un risultato. Poi scrivi un'e-mail per chiedere informazioni su una candidatura, senza allegare dati personali sensibili in un esercizio."),
+            ),
+        },
+        {
+            "title": "Strategia B1 nelle quattro abilitÃ ",
+            "outcome": "Affrontare lettura, ascolto, scrittura e orale con una procedura ripetibile e controllare gli errori ad alto impatto.",
+            "sections": (
+                ("Mappa", "Il livello B1 richiede autonomia su temi familiari e testi chiari. Non studiare grammatica separata dalle abilitÃ : ogni unitÃ  deve produrre un testo, una breve interazione, comprensione globale e comprensione mirata."),
+                ("Leggere e ascoltare", "Prima guarda compito, titolo e parole-chiave; poi cerca l'idea globale; alla seconda lettura/ascolto cerca prove puntuali. Non fermarti su ogni parola sconosciuta: deduci da connettori, contesto, prefissi e parti del discorso."),
+                ("Scrivere e parlare", "Pianifica in 60 secondi: destinatario, scopo, tre punti, chiusura. Dopo il testo controlla nell'ordine: 1 verbo e ordine, 2 caso/preposizione, 3 genere/plurale, 4 connettori, 5 registro. Nell'orale usa riparazioni: `Ich meine â€¦`, `Anders gesagt â€¦`, `KÃ¶nnen Sie die Frage bitte wiederholen?`"),
+                ("Allenamento", "Per un argomento B1, prepara una lista di 12 parole chiave e parla due minuti senza leggere un copione. Poi scrivi una e-mail di 100 parole sullo stesso argomento. Confronta: il messaggio risponde davvero al compito?"),
+                ("Autocontrollo", "Un test pratica il formato, ma l'obiettivo Ã¨ trasferire la lingua. Tieni un quaderno degli errori con: frase sbagliata, correzione, regola personale e una nuova frase tua."),
+            ),
+        },
+        {
+            "title": "Aggettivi, genitivo e gruppi nominali",
+            "outcome": "Comprendere e produrre sintagmi nominali piÃ¹ precisi in descrizioni e testi formali.",
+            "sections": (
+                ("Mappa", "La desinenza dell'aggettivo segnala genere, numero e caso. Strategia: prima individua articolo e caso, poi applica il modello. Dopo articolo determinativo molte informazioni sono giÃ  sull'articolo: `der gute Plan / den guten Plan / mit dem guten Plan`; dopo `ein` l'aggettivo completa ciÃ² che l'articolo non mostra: `ein guter Plan`, `ein gutes Angebot`."),
+                ("Genitivo", "Indica soprattutto possesso o relazione: `die Adresse des Kunden`, `die Dauer der Schulung`. Maschile/neutro: `des + -(e)s` al nome; femminile/plurale: `der`. Nel parlato spesso `von + dativo`, ma il genitivo Ã¨ comune nei testi formali e nei titoli."),
+                ("N-Deklination", "Alcuni nomi maschili prendono `-n/-en` in quasi tutti i casi: `der Kunde, den Kunden, dem Kunden`; `der Mensch, dem Menschen`. Imparali come gruppo nominale, non come eccezione isolata."),
+                ("Allenamento", "Espandi `Plan`: `der neue Plan`, `mit dem neuen Plan`, `ein neuer Plan`, `wegen des neuen Plans`. Poi descrivi un documento con tre gruppi nominali e rileggi prima gli articoli, poi le desinenze."),
+                ("Autocontrollo", "Non cercare di ricordare decine di finali senza contesto. Se sai riconoscere caso e articolo, l'aggettivo diventa un controllo visibile, non un indovinello."),
+            ),
+        },
+    ),
+    "B2": (
+        {
+            "title": "Riportare fonti: Konjunktiv I e discorso indiretto",
+            "outcome": "Distinguere tra ciÃ² che affermi e ciÃ² che riferisci, attribuendo correttamente informazioni e posizioni.",
+            "sections": (
+                ("Mappa", "Il Konjunktiv I segnala discorso indiretto: `Der Bericht erklÃ¤rt, die Kosten seien gestiegen.` Le forme piÃ¹ riconoscibili sono `sei, habe, werde, kÃ¶nne, mÃ¼sse`. Non rende un'informazione falsa: marca distanza e fonte, essenziale in notizie, verbali e sintesi."),
+                ("Procedura", "1. Nomina la fonte (`laut dem Bericht`, `die Sprecherin sagt â€¦`). 2. Trasforma il verbo quando la forma Ã¨ riconoscibile. 3. Mantieni tempo e significato con coerenza. Se Konjunktiv I e indicativo coincidono, si usa spesso Konjunktiv II: `Sie sagten, sie hÃ¤tten â€¦`"),
+                ("Non confondere", "`Er sagt, er kommt spÃ¤ter` Ã¨ discorso diretto riportato in stile quotidiano; `Er sagt, er komme spÃ¤ter` Ã¨ marcato e formale. `Er kÃ¤me spÃ¤ter` puÃ² essere forma sostitutiva o, in un altro contesto, ipotesi: cerca sempre la fonte e l'intenzione comunicativa."),
+                ("Allenamento", "Trasforma cinque informazioni di una breve notizia: `Die Firma: â€žWir erÃ¶ffnen im Mai.â€œ` â†’ `Die Firma teilt mit, sie werde im Mai erÃ¶ffnen.` Inserisci per ogni frase una fonte e non aggiungere inferenze personali."),
+                ("Autocontrollo", "Una sintesi corretta separa `il testo afferma` da `io penso`. Sottolinea i verbi di fonte (`berichten, erklÃ¤ren, betonen, behaupten`) e controlla che il lettore sappia sempre a chi attribuire ogni tesi."),
+            ),
+        },
+        {
+            "title": "Konjunktiv II: ipotesi, desideri e diplomazia",
+            "outcome": "Formulare scenari non reali, richieste attenuate, proposte e rimpianti con il registro appropriato.",
+            "sections": (
+                ("Mappa", "Presente/ipotesi: `wÃ¼rde + infinito` Ã¨ produttivo: `Ich wÃ¼rde den Vorschlag prÃ¼fen.` Forme frequenti da sapere: `hÃ¤tte, wÃ¤re, kÃ¶nnte, mÃ¼sste, sollte, dÃ¼rfte, mÃ¶chte`. Condizione: `Wenn ich mehr Zeit hÃ¤tte, wÃ¼rde ich â€¦`"),
+                ("Passato", "Per un'ipotesi o un rimpianto nel passato: `hÃ¤tte/wÃ¤re + Partizip II`: `Ich hÃ¤tte frÃ¼her Bescheid geben sollen.` / `Wir wÃ¤ren gern gekommen.` Con modale: `Ich hÃ¤tte das erledigen kÃ¶nnen.`"),
+                ("Diplomazia", "Il Konjunktiv II attenua: `KÃ¶nnten Sie â€¦?`, `WÃ¤re es mÃ¶glich, â€¦?`, `Ich wÃ¼rde vorschlagen, â€¦` Non usare troppi condizionali se vuoi essere chiaro: dopo una richiesta, indica azione e scadenza in modo diretto ma cortese."),
+                ("Allenamento", "Scrivi tre coppie realtÃ /ipotesi: `Ich habe keine Zeit. â€“ Wenn ich Zeit hÃ¤tte, â€¦` Poi riformula tre ordini come richieste professionali. Infine esprimi un rimpianto per una riunione mancata."),
+                ("Autocontrollo", "`wÃ¼rde` non sostituisce automaticamente ogni forma: per `sein, haben, modali` le forme semplici (`wÃ¤re, hÃ¤tte, kÃ¶nnte`) sono in genere piÃ¹ naturali. Scegli la forma che il lettore riconosce subito."),
+            ),
+        },
+        {
+            "title": "Argomentazione complessa e uso responsabile delle fonti",
+            "outcome": "Scrivere e discutere una posizione articolata, valutando alternative e distinguendo fatti, esempi e interpretazioni.",
+            "sections": (
+                ("Mappa", "Una Stellungnahme B2 ha: questione e tesi, due o tre argomenti sviluppati, controargomento trattato lealmente, valutazione e conclusione. Ogni paragrafo compie una funzione sola. Collegamenti possibili: `zunÃ¤chst, darÃ¼ber hinaus, allerdings, demgegenÃ¼ber, folglich, abschlieÃŸend`."),
+                ("QualitÃ  della prova", "Un esempio illustra; un dato supporta; una fonte attribuisce; nessuno dei tre dimostra tutto da solo. Formula con precisione: `Die Grafik legt nahe â€¦`, `Die Autorin argumentiert â€¦`, `Daraus folgt nicht zwingend, dass â€¦` Evita causalitÃ  assolute quando hai solo una correlazione."),
+                ("Concessione", "Rafforza la tesi riconoscendo un limite: `Zwar â€¦, jedoch â€¦`; `Auch wenn â€¦, bleibt â€¦`; `Es ist einzurÃ¤umen, dass â€¦` La concessione non Ã¨ un riempitivo: deve rispondere a una vera possibile obiezione."),
+                ("Allenamento", "Scegli una domanda con due soluzioni. Crea una tabella mentale: criterio, vantaggio, rischio, prova/esempio. Scrivi 180â€“220 parole e verifica che ogni conclusione risponda a un argomento giÃ  presentato."),
+                ("Autocontrollo", "Conta i connettori, ma soprattutto nomina il rapporto che ciascuno esprime. Se `allerdings` potrebbe essere sostituito da qualunque parola senza cambiare il senso, riscrivi il passaggio logico."),
+            ),
+        },
+        {
+            "title": "Nominalizzazione, stile e densitÃ  informativa",
+            "outcome": "Leggere e produrre testo formale senza perdere chiarezza, scegliendo consapevolmente tra frase verbale e nominale.",
+            "sections": (
+                ("Mappa", "Il tedesco formale usa spesso nomi da verbi/aggettivi: `entscheiden â†’ die Entscheidung`, `prÃ¼fen â†’ die PrÃ¼fung`, `mÃ¶glich â†’ die MÃ¶glichkeit`. Con preposizioni: `bei der PrÃ¼fung`, `nach der Entscheidung`, `zur Verbesserung`. Questo concentra informazioni, ma puÃ² appesantire il testo."),
+                ("Trasformare", "Verbo: `Die BehÃ¶rde prÃ¼ft den Antrag.` Nominale: `Die PrÃ¼fung des Antrags durch die BehÃ¶rde â€¦` La seconda forma funziona in titoli, verbali e documenti; la prima Ã¨ spesso piÃ¹ leggibile in un'e-mail. Non nominalizzare per sembrare piÃ¹ avanzato: prima assicurati che il responsabile dell'azione e il messaggio restino chiari."),
+                ("Attributi", "La densitÃ  nasce anche da composti e attributi: `die betriebliche WeiterbildungsmaÃŸnahme`, `die im April eingereichten Unterlagen`. Scomponi dal nucleo a destra: `WeiterbildungsmaÃŸnahme` Ã¨ il nucleo, `betriebliche` lo qualifica."),
+                ("Allenamento", "Riscrivi un breve avviso in due registri: e-mail chiara con verbi, nota formale con due nominalizzazioni. Poi accorcia una frase che contiene piÃ¹ di due nomi astratti: una frase piÃ¹ semplice puÃ² essere piÃ¹ professionale."),
+                ("Autocontrollo", "Controlla le maiuscole: i nomi nominalizzati sono maiuscoli (`beim Lesen`, `etwas Neues`). Se una frase non dice chi deve agire, sostituisci almeno una nominalizzazione con un verbo attivo."),
+            ),
+        },
+        {
+            "title": "Lettura specialistica, composti e dati",
+            "outcome": "Orientarsi in articoli, istruzioni, grafici e corrispondenza professionale individuando tesi, struttura e dettagli rilevanti.",
+            "sections": (
+                ("Mappa", "Leggi in tre passaggi: 1. scopo, titolo, mittente e struttura; 2. tesi e segnali logici; 3. dati/dettagli richiesti dal compito. Leggere ogni parola dall'inizio Ã¨ inefficiente e fa perdere il filo dei testi B2."),
+                ("Composti", "In un composto, l'ultima parola Ã¨ il nucleo: `Arbeitszeitgesetz` = legge (`Gesetz`) su tempo (`Zeit`) di lavoro (`Arbeit`). Dividi a destra, poi ricostruisci. Cerca anche elementi di raccordo: `Krankenversicherung`, `Betriebsratssitzung`."),
+                ("Grafici", "Distingui valore, confronto e interpretazione: `Der Anteil stieg von â€¦ auf â€¦`; `liegt bei â€¦`; `ist im Vergleich zu â€¦ hÃ¶her`; `dies kÃ¶nnte darauf hindeuten, dass â€¦`. Un grafico mostra dati, non cause automatiche. Specifica unitÃ , periodo e gruppo di riferimento."),
+                ("Allenamento", "Scegli un testo di lavoro di una pagina. Scrivi una frase per scopo, tre parole chiave per paragrafo, una domanda al testo e un riassunto di 80 parole. Per un composto lungo, indica prima il nucleo e poi i modificatori."),
+                ("Autocontrollo", "Dopo la lettura verifica: quale informazione Ã¨ esplicita? Quale Ã¨ un'inferenza mia? Una sintesi B2 affidabile mantiene questa distinzione anche quando usa parole diverse dall'originale."),
+            ),
+        },
+        {
+            "title": "Produzione B2: progettare, rivedere, presentare",
+            "outcome": "Produrre testi e interventi articolati rispondendo con precisione a compito, destinatario, struttura e registro.",
+            "sections": (
+                ("Mappa", "Prima di scrivere o parlare definisci: genere testuale, destinatario, obiettivo, punti obbligatori, posizione e prove. Una `Beschwerde` chiede rimedio; una `Stellungnahme` valuta; una sintesi attribuisce fonti; una presentazione guida ascoltatori con struttura esplicita."),
+                ("Architettura", "Testo: apertura che inquadra, paragrafi con frase-guida, conclusione proporzionata. Presentazione: `ZunÃ¤chst â€¦, anschlieÃŸend â€¦, zum Schluss â€¦`; chiudi con sintesi e domanda. Le formule fisse aiutano solo se il contenuto dopo di esse Ã¨ specifico e pertinente."),
+                ("Revisione in passaggi", "Fai piÃ¹ riletture: 1 compito e completezza, 2 logica/ordine dei paragrafi, 3 fonti ed esempi, 4 verbi e casi, 5 lessico e registro, 6 ortografia/punteggiatura. Nella produzione orale, registra una prova e ascolta pause, chiarezza e ripetizioni."),
+                ("Allenamento", "Scrivi una risposta B2 con un limite di parole e una lista di controllo. Riducila poi del 15% senza togliere tesi o prove: scoprirai ripetizioni e formule vuote. Presenta il testo in due minuti senza leggerlo integralmente."),
+                ("Autocontrollo", "Un testo grammaticalmente ricco non supera un compito se manca un punto richiesto o usa il registro sbagliato. Controlla prima la comunicazione, poi la finezza linguistica."),
+            ),
+        },
+        {
+            "title": "Verbi con preposizione e pronominaladverbien",
+            "outcome": "Usare combinazioni verbali naturali, domandare e riprendere temi/oggetti con da-/wo- e gestire il caso retto.",
+            "sections": (
+                ("Mappa", "Impara il blocco intero: `warten auf + Akk`, `teilnehmen an + Dat`, `sich interessieren fÃ¼r + Akk`, `abhÃ¤ngen von + Dat`, `bitten um + Akk`. La preposizione non si traduce meccanicamente e decide il caso. Un verbo memorizzato senza preposizione Ã¨ incompleto."),
+                ("Cose e persone", "Per una cosa/tema: `Ich warte darauf.` / `Worauf wartest du?` Per una persona: `Ich warte auf ihn.` / `Auf wen wartest du?` Con vocali iniziali compare `r`: `darauf, worÃ¼ber, daran`. `wofÃ¼r` e `dafÃ¼r` sono una sola parola, non *fÃ¼r was* nello scritto curato."),
+                ("Posizione", "La preposizione resta legata al suo complemento; con una subordinata spesso appare `daran, dass â€¦`: `Ich denke daran, dass â€¦` In molti casi Ã¨ piÃ¹ naturale l'infinito con `daran, â€¦ zu`: `Ich denke daran, die Unterlagen zu schicken.`"),
+                ("Allenamento", "Crea cartoncini fronte/retro: `sich bewerben â€“ um + Akk â€“ Ich bewerbe mich um â€¦`; `sprechen â€“ mit + Dat â€“ WorÃ¼ber sprechen wir?` Trasforma cinque ripetizioni di un nome-cosa in `da-` e cinque domande in `wo-`."),
+                ("Autocontrollo", "Chiedi prima: il riferimento Ã¨ una persona o una cosa? Poi: quale preposizione e quale caso richiede il verbo? Questa sequenza risolve gran parte degli errori B2 con complementi verbali."),
+            ),
+        },
+    ),
+}
+
+
+LABELS = {
+    "it": {
+        "open": "Approfondimento da manuale", "outcome": "Obiettivo operativo", "note": "L'approfondimento esteso Ã¨ redatto in italiano; la teoria essenziale sopra resta disponibile nella lingua dell'interfaccia.",
+    },
+    "en": {
+        "open": "Textbook deepening", "outcome": "Practical outcome", "note": "The extended deepening is written in Italian; the core theory above remains available in the interface language.",
+    },
+    "es": {
+        "open": "ProfundizaciÃ³n de manual", "outcome": "Objetivo prÃ¡ctico", "note": "La profundizaciÃ³n ampliada estÃ¡ escrita en italiano; la teorÃ­a esencial anterior sigue disponible en el idioma de la interfaz.",
+    },
+    "tr": {
+        "open": "Ders kitabÄ± derinleÅŸtirmesi", "outcome": "UygulamalÄ± hedef", "note": "GeniÅŸletilmiÅŸ derinleÅŸtirme Ä°talyanca yazÄ±lmÄ±ÅŸtÄ±r; yukarÄ±daki temel kuram arayÃ¼z dilinde kullanÄ±labilir.",
+    },
+}
+
+
+def render_textbook_unit(st: Any, level: str, topic_index: int, language: str) -> None:
+    """Render one expanded textbook unit below the existing concise theory card."""
+    unit = UNITS[level][topic_index]
+    labels = LABELS[language]
+    with st.expander(f"ðŸ“˜ {labels['open']} Â· {unit['title']}", expanded=False):
+        if language != "it":
+            st.caption(labels["note"])
+        st.markdown(f"**{labels['outcome']}.** {unit['outcome']}")
+        for heading, text in unit["sections"]:
+            st.markdown(f"**{heading}.**  \n{text}")
+
+LEVELS = ("A1", "A2", "B1", "B2")
+STORAGE_FILE = Path(__file__).with_name("learner_progress.json")
+
+
+@dataclass(frozen=True)
+class Mission:
+    id: str
+    level: str
+    title: str
+    can_do: str
+    grammar: str
+    lexis: str
+    input_task: str
+    output_task: str
+    challenge: str
+    checkpoint: str
+    minutes: int
+
+
+# Ogni missione porta da un input comprensibile a una piccola prestazione.
+# Ãˆ piÃ¹ utile di una lunga lista di argomenti: lo studente sa cosa deve saper fare.
+MISSIONS = (
+    Mission("a1-01", "A1", "Presentarsi con naturalezza", "presentarti, fare domande semplici e reagire a una risposta", "sein, heiÃŸen, kommen; verbo in posizione 2", "identitÃ , paesi, lingue, numeri", "Ascolta o leggi tre mini-profili e sottolinea: nome, origine, lingua, professione.", "Registra o pronuncia un autoritratto di 45 secondi: nome, cittÃ , lavoro/studio, due gusti e una domanda all'interlocutore.", "Cambia l'ordine: Heute wohne ich in â€¦ / In meiner Freizeit â€¦", "Riesci a produrre 6 frasi intere senza leggere?", 35),
+    Mission("a1-02", "A1", "Gestire la giornata", "raccontare una routine e fissare un appuntamento", "verbi regolari, separabili e modali", "orari, giorni, routine, appuntamenti", "Leggi un'agenda e ricostruisci a che ora iniziano e finiscono tre attivitÃ .", "Invia un messaggio di 4â€“5 frasi per proporre, accettare o spostare un appuntamento.", "Usa prima il tempo: Am Dienstag kann ich â€¦", "In ogni frase il verbo coniugato Ã¨ davvero al secondo posto?", 40),
+    Mission("a1-03", "A1", "Muoversi e acquistare", "chiedere ciÃ² che vuoi, prezzi e indicazioni", "accusativo; mÃ¶chten, kÃ¶nnen; imperativo cortese", "negozi, cibo, trasporti, quantitÃ ", "Leggi tre cartelli e scegli il servizio o il binario appropriato.", "Fai due turni di dialogo: in panetteria e alla fermata. Usa bitte, gern, noch einmal.", "Aggiungi una domanda di chiarimento: Wo genau? / Wie viel kostet das?", "Sai distinguere der da den in almeno tre frasi?", 40),
+    Mission("a1-04", "A1", "Descrivere persone e luoghi", "descrivere un ambiente e parlare di ciÃ² che possiedi", "articoli possessivi, negazione kein/nicht, dativo con mit", "casa, famiglia, mobili, aggettivi frequenti", "Confronta due annunci di appartamento e trova quattro differenze.", "Descrivi la tua stanza o un appartamento ideale in 6 frasi; includi una frase negativa.", "Inserisci mit + dativo: Ich wohne mit â€¦", "Il testo contiene informazioni, non solo una lista di nomi?", 40),
+    Mission("a2-01", "A2", "Raccontare esperienze", "dire cosa Ã¨ successo, quando e con chi", "Perfekt con haben/sein; participi", "viaggi, weekend, esperienze", "Ordina sei eventi di un weekend usando prima, dann, danach, schlieÃŸlich.", "Racconta un fine settimana in 80â€“100 parole e fai una domanda finale a un amico.", "Usa almeno due verbi di movimento con sein.", "I participi sono alla fine della frase?", 45),
+    Mission("a2-02", "A2", "Spiegare un problema", "descrivere un guasto o una difficoltÃ  e chiedere aiuto", "dativo; preposizioni locali; weil", "salute, casa, officina, assistenza", "Leggi tre richieste di assistenza e abbina problema e soluzione.", "Scrivi un messaggio a un servizio clienti: problema, quando Ã¨ iniziato, cosa chiedi.", "Aggiungi una causa con weil e manda il verbo in fondo.", "Il destinatario capisce che cosa deve fare?", 45),
+    Mission("a2-03", "A2", "Confrontare e consigliare", "esprimere preferenze e dare un consiglio semplice", "comparativo, superlativo, sollen, lieber", "tempo libero, salute, acquisti", "Scegli tra due offerte e giustifica la scelta con tre criteri.", "Consiglia un amico: Was soll er tun? Usa almeno due confronti.", "Usa zwar â€¦ aber in una frase, anche se non Ã¨ obbligatorio.", "Hai dato una ragione e non solo un'opinione?", 45),
+    Mission("a2-04", "A2", "Parlare di progetti", "presentare intenzioni, possibilitÃ  e condizioni semplici", "futuro con werden; wenn; connettori", "lavoro, corsi, progetti, tempo", "Individua in un annuncio cinque informazioni: requisito, orario, luogo, scadenza, contatto.", "Presenta un piano per il mese prossimo in 90 secondi o 100 parole.", "Usa wenn per collegare condizione e conseguenza.", "Ogni frase lunga Ã¨ ancora comprensibile a voce?", 45),
+    Mission("b1-01", "B1", "Raccontare con struttura", "narrare un evento, evidenziare il punto importante e reagire", "PrÃ¤teritum di sein/haben/modali; narrazione", "esperienze, imprevisti, emozioni", "Leggi una notizia breve e separa fatti, conseguenze e opinioni.", "Racconta un imprevisto in 130 parole: situazione, svolta, soluzione, lezione imparata.", "Inserisci almeno tre marcatori temporali variati.", "Un lettore puÃ² ricostruire chiaramente la sequenza?", 50),
+    Mission("b1-02", "B1", "Lavorare e collaborare", "spiegare una procedura e coordinare attivitÃ ", "passivo presente; infinitive clauses um â€¦ zu", "lavoro, sicurezza, istruzioni, strumenti", "Trasforma quattro istruzioni dirette in una procedura neutra.", "Scrivi una procedura di lavoro sicura in 6 passaggi oppure spiega come si fa una prenotazione.", "Usa prima, danach, anschlieÃŸend, zum Schluss.", "Hai specificato chi fa cosa e in quale ordine?", 50),
+    Mission("b1-03", "B1", "Argomentare con equilibrio", "dire ciÃ² che pensi e riconoscere un punto di vista diverso", "weil, obwohl, deshalb, trotzdem; frasi secondarie", "societÃ , digitale, ambiente, scuola", "Classifica otto affermazioni in fatto, opinione, esempio e conseguenza.", "Scrivi un post di forum di 150 parole: posizione, due ragioni, controargomento, conclusione.", "Collega le idee con almeno quattro connettori diversi.", "Dopo obwohl/weil il verbo finisce davvero alla fine?", 55),
+    Mission("b1-04", "B1", "Capire e mediare", "trasmettere in modo semplice un'informazione tedesca a un italofono", "pronomi relativi; verbi con preposizione", "avvisi, regole, salute, viaggi", "Leggi un regolamento tedesco e individua obblighi, divieti e eccezioni.", "Spiega in italiano a un amico le tre informazioni operative piÃ¹ importanti; poi formula una domanda in tedesco per verificare se ha capito.", "Non tradurre parola per parola: raggruppa il significato.", "Hai conservato i dettagli che cambiano davvero l'azione?", 50),
+    Mission("b2-01", "B2", "Difendere una posizione", "sostenere una tesi con precisione, esempi e concessioni", "connettori argomentativi; zwar â€¦ aber; Konjunktiv II", "lavoro ibrido, mobilitÃ , istruzione", "Leggi due opinioni opposte e annota tesi, argomento, prova, limite.", "Prepara un intervento di 2 minuti: tesi, due argomenti, obiezione, risposta e conclusione.", "Usa almeno una concessione: Einerseits â€¦ andererseits â€¦", "La conclusione riprende la tesi senza ripeterla uguale?", 60),
+    Mission("b2-02", "B2", "Scrivere in registro formale", "scrivere una richiesta o un reclamo professionale persuasivo", "nominalizzazioni frequenti; Konjunktiv II di cortesia; struttura e-mail", "azienda, amministrazione, servizi, candidature", "Analizza due e-mail: oggetto, scopo, richiesta concreta, chiusura.", "Scrivi 180â€“220 parole a un ufficio/azienda: contesto, problema o richiesta, proposta, scadenza, chiusura.", "Evita saluti informali e indica una richiesta verificabile.", "Il registro resta formale dall'oggetto al saluto?", 65),
+    Mission("b2-03", "B2", "Comprendere l'implicito", "distinguere fatti, atteggiamenti e intenzioni in testi complessi", "Konjunktiv I nel discorso indiretto; particelle e sfumature", "media, scienza, cultura, politiche pubbliche", "Leggi un commento e marca ciÃ² che Ã¨ fatto, citazione, valutazione e ironia possibile.", "Riporta a voce l'opinione di un autore senza attribuirla a te: Der Autor betont, er sei â€¦", "Confronta due fonti: in che cosa cambiano prospettiva e tono?", "Sai dire 'secondo la fonte' anche quando non sei d'accordo?", 60),
+    Mission("b2-04", "B2", "Negoziare una soluzione", "interagire spontaneamente, chiarire e arrivare a un compromesso", "ipotesi con Konjunktiv II; frasi relative avanzate", "alloggio, lavoro, progetto, decisioni comuni", "Leggi un caso con interessi in conflitto e annota prioritÃ /non negoziabili di entrambe le parti.", "Fai una simulazione di 3 minuti: proposta, reazione, domanda chiarificatrice, alternativa, accordo.", "Riformula prima l'idea dell'altro: Wenn ich Sie richtig verstehe, â€¦", "Hai chiesto, reagito e costruito una soluzione; non hai solo parlato?", 65),
+)
+
+
+WRITING_PROMPTS = (
+    {
+        "level": "B1", "title": "Forum: smartphone a scuola", "words": "150â€“180",
+        "brief": "In un forum scolastico si discute se gli smartphone debbano essere vietati durante le lezioni. Esprimi la tua posizione, dai due ragioni, considera un'obiezione e proponi una regola concreta.",
+        "useful": "Meines Erachtens â€¦ / Ein wichtiger Vorteil/Nachteil ist â€¦ / Zwar â€¦, aber â€¦ / Deshalb schlage ich vor, dass â€¦",
+    },
+    {
+        "level": "B1", "title": "Messaggio al gruppo", "words": "120â€“150",
+        "brief": "Il tuo gruppo sta organizzando un viaggio ma il piano iniziale Ã¨ troppo costoso. Scrivi al gruppo: spiega il problema, confronta due alternative, esprimi una preferenza e chiedi una decisione.",
+        "useful": "Ich habe festgestellt, dass â€¦ / Im Vergleich dazu â€¦ / WÃ¤re es mÃ¶glich, â€¦? / Wie seht ihr das?",
+    },
+    {
+        "level": "B2", "title": "E-mail formale: corso annullato", "words": "180â€“220",
+        "brief": "Un corso professionale per il quale hai giÃ  pagato Ã¨ stato annullato con poco preavviso. Scrivi all'organizzazione: indica i fatti, spiega le conseguenze, formula una richiesta precisa e proponi una soluzione accettabile.",
+        "useful": "Sehr geehrte Damen und Herren, / hiermit mÃ¶chte ich mich an Sie wenden, weil â€¦ / FÃ¼r mich ergibt sich daraus â€¦ / Ich bitte Sie daher, â€¦ / Mit freundlichen GrÃ¼ÃŸen",
+    },
+    {
+        "level": "B2", "title": "Post argomentativo: cittÃ  senza auto", "words": "180â€“220",
+        "brief": "Una cittÃ  vuole limitare drasticamente il traffico privato nel centro. Scrivi un contributo per il forum: valuta vantaggi e svantaggi, rispondi a un'obiezione plausibile e difendi una misura concreta.",
+        "useful": "Einerseits â€¦, andererseits â€¦ / Es lÃ¤sst sich nicht bestreiten, dass â€¦ / Dennoch Ã¼berwiegt fÃ¼r mich â€¦ / Entscheidend wÃ¤re, dass â€¦",
+    },
+    {
+        "level": "B2", "title": "Candidatura mirata", "words": "160â€“200",
+        "brief": "Hai trovato un tirocinio in Germania nel tuo settore. Scrivi un'e-mail di candidatura: motivo, competenze dimostrabili, disponibilitÃ  e domanda sul processo successivo.",
+        "useful": "mit groÃŸem Interesse habe ich â€¦ / Besonders qualifiziert mich â€¦ / Ãœber die Gelegenheit zu einem GesprÃ¤ch wÃ¼rde ich mich freuen. / KÃ¶nnten Sie mir bitte mitteilen, â€¦?",
+    },
+    {
+        "level": "B2", "title": "Sintesi e mediazione", "words": "140â€“180",
+        "brief": "Un collega italiano non capisce un avviso tedesco sulla sicurezza sul lavoro. Spiega in italiano le istruzioni operative, le motivazioni e che cosa deve fare se nota un problema. Aggiungi poi due domande in tedesco per verificare la comprensione.",
+        "useful": "In pratica significa che â€¦ / Ãˆ obbligatorio â€¦ / In caso di â€¦ bisogna â€¦ / Hast du verstanden, wann â€¦?",
+    },
+)
+
+
+SPEAKING_PROMPTS = (
+    {
+        "level": "A2", "title": "Organizzare un appuntamento", "scenario": "Vuoi incontrare un collega sabato. Il primo orario non va bene all'altra persona.",
+        "goal": "Proponi due alternative, chiedi una preferenza e conferma luogo e ora.",
+        "moves": "Vorschlag: Wie wÃ¤re es mit â€¦? | Reazione: Das passt mir leider nicht. | Compromesso: Dann kÃ¶nnten wir â€¦ | Conferma: Also treffen wir uns â€¦",
+    },
+    {
+        "level": "B1", "title": "Risolvere un problema in casa", "scenario": "Il vicino fa rumore tardi; non vuoi litigare e cerchi una soluzione.",
+        "goal": "Spiega l'effetto concreto, ascolta la sua prospettiva e concorda una regola.",
+        "moves": "Ich verstehe, dass â€¦ | FÃ¼r mich ist es schwierig, weil â€¦ | KÃ¶nnten wir vereinbaren, dass â€¦? | Damit wÃ¤re ich einverstanden.",
+    },
+    {
+        "level": "B2", "title": "Lavoro ibrido", "scenario": "Nel team alcuni vogliono piÃ¹ giorni da remoto, altri temono una collaborazione peggiore.",
+        "goal": "Difendi una proposta equilibrata, rispondi a un'obiezione e chiudi con un compromesso operativo.",
+        "moves": "Aus meiner Sicht spricht dafÃ¼r, dass â€¦ | Ich kann den Einwand nachvollziehen. | Entscheidend wÃ¤re jedoch â€¦ | WÃ¤re ein Pilotprojekt denkbar?",
+    },
+    {
+        "level": "B2", "title": "Trovare un alloggio", "scenario": "Con un coinquilino devi scegliere tra un appartamento economico lontano e uno costoso vicino al lavoro.",
+        "goal": "Pesa criteri, fai domande di chiarimento e raggiungi una decisione comune.",
+        "moves": "Wenn wir die Fahrtzeit berÃ¼cksichtigen, â€¦ | Was wÃ¤re dir wichtiger? | Unter der Bedingung, dass â€¦, wÃ¤re ich dafÃ¼r. | Dann halten wir fest, dass â€¦",
+    },
+)
+
+
+READING_CASES = (
+    {
+        "level": "B1", "title": "Avviso: bicicletta e sicurezza",
+        "text": "Wegen mehrerer UnfÃ¤lle wird der Fahrradraum vom 3. bis 10. Mai umgebaut. FahrrÃ¤der dÃ¼rfen in dieser Zeit nicht im Treppenhaus abgestellt werden. Bewohnerinnen und Bewohner kÃ¶nnen den provisorischen Stellplatz hinter dem GebÃ¤ude benutzen. Wer einen besonders groÃŸen FahrradanhÃ¤nger hat, soll sich bis Freitag bei der Hausverwaltung melden.",
+        "questions": (
+            ("Qual Ã¨ il motivo della misura?", "Mehrere UnfÃ¤lle", ("Ein neues Gesetz", "Ein Umzug")),
+            ("Che cosa Ã¨ vietato temporaneamente?", "FahrrÃ¤der im Treppenhaus abstellen", ("Mit dem Fahrrad fahren", "Den Stellplatz benutzen")),
+            ("Chi deve contattare l'amministrazione?", "Menschen mit einem groÃŸen FahrradanhÃ¤nger", ("Alle Bewohner", "Neue Mieter")),
+        ),
+    },
+    {
+        "level": "B2", "title": "Commento: formazione continua",
+        "text": "Viele Unternehmen werben damit, lebenslanges Lernen zu fÃ¶rdern. In der Praxis werden Weiterbildungskurse jedoch oft genau dann angeboten, wenn die Arbeitsbelastung besonders hoch ist. Das Problem liegt daher weniger in mangelnder Motivation der BeschÃ¤ftigten als in der Frage, ob Lernen als private Zusatzleistung oder als Teil der Arbeitszeit verstanden wird. Wer Weiterbildung ernst nimmt, muss nicht nur digitale Plattformen bereitstellen, sondern auch Zeitfenster schaffen, in denen Fehler, Fragen und langsames Verstehen erlaubt sind.",
+        "questions": (
+            ("Qual Ã¨ la tesi centrale dell'autore?", "Weiterbildung braucht auch geschÃ¼tzte Arbeitszeit", ("Digitale Plattformen sind Ã¼berflÃ¼ssig", "BeschÃ¤ftigte sind unmotiviert")),
+            ("Che cosa critica il testo?", "Kurse werden bei hoher Arbeitsbelastung angeboten", ("Zu viele Fehler im Unterricht", "Zu wenig Werbung")),
+            ("Quale tono ha la frase finale?", "Fordernd und begrÃ¼ndend", ("Ironisch und beleidigend", "Rein beschreibend")),
+        ),
+    },
+)
+
+
+CONNECTORS = {
+    "sequenza": ("zuerst", "danach", "anschlieÃŸend", "schlieÃŸlich"),
+    "causa e conseguenza": ("weil", "da", "deshalb", "daher", "folglich"),
+    "contrasto": ("aber", "jedoch", "trotzdem", "obwohl", "wÃ¤hrend"),
+    "argomentazione": ("einerseits", "andererseits", "zwar", "dennoch", "auÃŸerdem"),
+    "registro formale": ("hiermit", "daher", "bezÃ¼glich", "insbesondere", "abschlieÃŸend"),
+}
+
+
+def _default_state() -> dict[str, Any]:
+    return {
+        "version": 1,
+        "profile": {"placement": None, "goal": "B2 pratico", "minutes_per_day": 35},
+        "completed_missions": [],
+        "mission_notes": {},
+        "cards": {},
+        "writing": [],
+        "speaking": [],
+        "exam_history": [],
+        "study_days": [],
+    }
+
+
+def _load_state(st: Any) -> dict[str, Any]:
+    key = "ddm_fluency_state"
+    if key in st.session_state:
+        return st.session_state[key]
+    state = _default_state()
+    try:
+        if STORAGE_FILE.exists():
+            loaded = json.loads(STORAGE_FILE.read_text(encoding="utf-8"))
+            if isinstance(loaded, dict):
+                state.update(loaded)
+    except (OSError, json.JSONDecodeError):
+        pass
+    st.session_state[key] = state
+    return state
+
+
+def _save_state(state: dict[str, Any]) -> bool:
+    try:
+        STORAGE_FILE.write_text(json.dumps(state, ensure_ascii=False, indent=2), encoding="utf-8")
+        return True
+    except OSError:
+        return False
+
+
+def _touch_study_day(state: dict[str, Any]) -> None:
+    today = date.today().isoformat()
+    if today not in state["study_days"]:
+        state["study_days"].append(today)
+
+
+def _normalise(text: str) -> str:
+    return re.sub(r"[^a-zÃ¤Ã¶Ã¼ÃŸ]", "", text.lower())
+
+
+def _question_parts(question: dict[str, Any]) -> tuple[str, list[str], str]:
+    """Rende interrogabili anche le domande create dalla vecchia banca."""
+    if question["type"] == "grammar":
+        return question["question"], list(question["options"]), question["answer"]
+    item = question["item"]
+    if question["type"] == "meaning":
+        prompt = f"Che cosa significa **{item['de']}**?"
+        return prompt, [option["it"] for option in question["options"]], question["answer"]["it"]
+    prompt = f"Completa: il tedesco per **{item['it']}** Ã¨ â€¦"
+    return prompt, [option["de"] for option in question["options"]], question["answer"]["de"]
+
+
+def _unique_questions(question_bank: list[dict[str, Any]], level: str, amount: int, seed: str) -> list[dict[str, Any]]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for question in question_bank:
+        if question["level"] == level:
+            grouped.setdefault(question["group"], []).append(question)
+    chooser = random.Random(seed)
+    groups = list(grouped)
+    chooser.shuffle(groups)
+    return [chooser.choice(grouped[group]) for group in groups[:amount]]
+
+
+def _all_cards(vocab_by_level: dict[str, list[dict[str, str]]]) -> list[dict[str, str]]:
+    cards: list[dict[str, str]] = []
+    for level in LEVELS:
+        for index, item in enumerate(vocab_by_level.get(level, [])):
+            cards.append({"id": f"{level}-{index}", "level": level, "de": item["de"], "it": item["it"]})
+    return cards
+
+
+def _next_review(card_state: dict[str, Any], correct: bool) -> dict[str, Any]:
+    """Piccola versione trasparente dello spaced repetition: 1, 3, 7, 14 â€¦ giorni."""
+    repeats = int(card_state.get("repetitions", 0))
+    interval = int(card_state.get("interval", 0))
+    if correct:
+        repeats += 1
+        interval = (1, 3, 7, 14, 30, 60)[min(repeats - 1, 5)] if interval == 0 else min(90, max(3, round(interval * 1.7)))
+    else:
+        repeats = 0
+        interval = 1
+    return {
+        "repetitions": repeats,
+        "interval": interval,
+        "next_review": (date.today() + timedelta(days=interval)).isoformat(),
+        "last_review": date.today().isoformat(),
+    }
+
+
+def _current_mission(state: dict[str, Any]) -> Mission:
+    done = set(state["completed_missions"])
+    placement = state["profile"].get("placement") or "A1"
+    start = LEVELS.index(placement)
+    candidates = [m for m in MISSIONS if LEVELS.index(m.level) >= start and m.id not in done]
+    return candidates[0] if candidates else MISSIONS[-1]
+
+
+def _render_overview(st: Any, state: dict[str, Any]) -> None:
+    current = _current_mission(state)
+    completed = len(state["completed_missions"])
+    all_cards = state["cards"]
+    due = sum(1 for card in all_cards.values() if card.get("next_review", "9999-12-31") <= date.today().isoformat())
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Missioni concluse", f"{completed}/{len(MISSIONS)}")
+    c2.metric("Carte da ripassare", due)
+    c3.metric("Produzioni salvate", len(state["writing"]) + len(state["speaking"]))
+    c4.metric("Punto di partenza", state["profile"].get("placement") or "da definire")
+    st.progress(completed / len(MISSIONS), text="Progresso del percorso comunicativo")
+
+    with st.container(border=True):
+        st.subheader(f"Oggi: {current.level} Â· {current.title}")
+        st.write(f"**Alla fine saprai:** {current.can_do}")
+        st.caption(f"Sessione consigliata: {current.minutes} minuti Â· Grammatica: {current.grammar}")
+        left, right = st.columns(2)
+        with left:
+            st.markdown("**1. Comprendi**")
+            st.write(current.input_task)
+            st.markdown("**2. Noti la forma**")
+            st.write(current.grammar)
+        with right:
+            st.markdown("**3. Produci**")
+            st.write(current.output_task)
+            st.markdown("**4. Migliora**")
+            st.write(current.challenge)
+
+        with st.form(f"mission_{current.id}"):
+            understood = st.checkbox("Ho svolto l'input e so dire quale informazione cercavo.")
+            produced = st.checkbox("Ho parlato o scritto senza copiare una risposta pronta.")
+            checked = st.checkbox("Ho controllato forma, connettori e comprensibilitÃ .")
+            note = st.text_area("Una frase che voglio ricordare", placeholder="Es.: Einerseits spart Homeoffice Zeit, andererseits â€¦")
+            submit = st.form_submit_button("Concludi e salva la missione", type="primary", icon=":material/check_circle:")
+        if submit:
+            if not (understood and produced and checked):
+                st.warning("Per segnare una missione servono input, produzione e controllo: sono le tre fasi che costruiscono autonomia.", icon=":material/flag:")
+            else:
+                if current.id not in state["completed_missions"]:
+                    state["completed_missions"].append(current.id)
+                if note.strip():
+                    state["mission_notes"][current.id] = note.strip()
+                _touch_study_day(state)
+                _save_state(state)
+                st.success("Missione registrata. La prossima volta il percorso ti proporrÃ  il passo successivo.", icon=":material/check_circle:")
+
+    st.subheader("Micro-ripasso: connettori da usare oggi")
+    groups = ["sequenza", "causa e conseguenza"] if current.level in ("A1", "A2") else ["contrasto", "argomentazione"]
+    for group in groups:
+        st.write(f"**{group.capitalize()}:** " + " Â· ".join(CONNECTORS[group]))
+
+
+def _render_placement(st: Any, state: dict[str, Any], question_bank: list[dict[str, Any]]) -> None:
+    st.subheader("Diagnostica iniziale")
+    st.write("Non Ã¨ un esame e non certifica un livello. Serve a scegliere un punto di partenza utile: rispondi senza traduttore, poi usa il risultato come ipotesi da verificare nelle prime missioni.")
+    if "ddm_placement_questions" not in st.session_state:
+        questions: list[dict[str, Any]] = []
+        for level in LEVELS:
+            questions.extend(_unique_questions(question_bank, level, 4, f"placement-{level}"))
+        st.session_state["ddm_placement_questions"] = questions
+    questions = st.session_state["ddm_placement_questions"]
+    with st.form("placement_form"):
+        answers = {}
+        for number, question in enumerate(questions, start=1):
+            prompt, options, _ = _question_parts(question)
+            st.markdown(f"**{number}. [{question['level']}] {prompt}**")
+            answers[question["id"]] = st.radio("Scegli una risposta", options, index=None, key=f"placement_answer_{question['id']}", label_visibility="collapsed")
+        submitted = st.form_submit_button("Valuta la diagnostica", type="primary", icon=":material/assessment:")
+    if submitted:
+        correct = sum(answers[q["id"]] == _question_parts(q)[2] for q in questions)
+        if correct <= 4:
+            level = "A1"
+        elif correct <= 8:
+            level = "A2"
+        elif correct <= 12:
+            level = "B1"
+        else:
+            level = "B2"
+        state["profile"]["placement"] = level
+        _touch_study_day(state)
+        _save_state(state)
+        st.success(f"Risultato: **{correct}/16**. Punto di partenza consigliato: **{level}**.", icon=":material/target:")
+        st.info("Se le prime due missioni risultano troppo facili o troppo dure, cambia livello liberamente: una diagnostica non sostituisce l'osservazione reale della tua produzione.", icon=":material/info:")
+
+
+def _render_path(st: Any, state: dict[str, Any]) -> None:
+    st.subheader("Percorso A1 â†’ B2")
+    st.caption("Ogni blocco chiude un ciclo completo: capisci, osservi, produci, controlli. Non passare oltre perchÃ© hai letto la regola: passa oltre quando sai usarla.")
+    done = set(state["completed_missions"])
+    for level in LEVELS:
+        level_missions = [m for m in MISSIONS if m.level == level]
+        number_done = sum(m.id in done for m in level_missions)
+        with st.expander(f"{level} Â· {number_done}/{len(level_missions)} missioni concluse", expanded=level == (state["profile"].get("placement") or "A1")):
+            for mission in level_missions:
+                status = "Completata" if mission.id in done else "Da svolgere"
+                with st.container(border=True):
+                    st.markdown(f"**{mission.title}** Â· :{'green' if mission.id in done else 'orange'}-badge[{status}]")
+                    st.write(mission.can_do)
+                    st.caption(f"Lessico: {mission.lexis} Â· circa {mission.minutes} min")
+                    st.write(f"**Output:** {mission.output_task}")
+                    st.write(f"**Criterio di uscita:** {mission.checkpoint}")
+                    if saved := state["mission_notes"].get(mission.id):
+                        st.caption(f"La tua frase-ancora: {saved}")
+
+
+def _render_review(st: Any, state: dict[str, Any], vocab_by_level: dict[str, list[dict[str, str]]]) -> None:
+    st.subheader("Ripasso attivo e dilazionato")
+    st.write("Prima prova a recuperare la parola senza guardare. Le carte corrette tornano piÃ¹ tardi; quelle incerte tornano domani. Ãˆ il recupero, non la rilettura, a rendere il lessico disponibile quando parli.")
+    cards = _all_cards(vocab_by_level)
+    known = state["cards"]
+    today = date.today().isoformat()
+    due = [card for card in cards if known.get(card["id"], {}).get("next_review", "0000-00-00") <= today]
+    unseen = [card for card in cards if card["id"] not in known]
+    rng = random.Random(today + str(len(known)))
+    rng.shuffle(due)
+    rng.shuffle(unseen)
+    selected = (due + unseen)[:10]
+    if not selected:
+        st.success("Nessuna carta Ã¨ dovuta oggi. Torna domani o fai una missione di produzione.", icon=":material/event_available:")
+        return
+    st.caption(f"Sessione: {len(selected)} carte Â· dovute: {len(due)} Â· nuove: {max(0, len(selected) - len(due))}")
+    with st.form("review_form"):
+        answers: dict[str, str] = {}
+        for card in selected:
+            st.markdown(f"**[{card['level']}]** Qual Ã¨ il tedesco per: *{card['it']}*?")
+            answers[card["id"]] = st.text_input("La tua risposta", key=f"review_input_{card['id']}_{today}", placeholder="Scrivi la parola, meglio con l'articolo", label_visibility="collapsed")
+        submitted = st.form_submit_button("Correggi e programma il prossimo ripasso", type="primary", icon=":material/spellcheck:")
+    if submitted:
+        correct_count = 0
+        for card in selected:
+            typed = _normalise(answers[card["id"]])
+            expected = _normalise(card["de"])
+            base_word = _normalise(card["de"].split(" ", 1)[-1])
+            correct = typed in {expected, base_word}
+            known[card["id"]] = _next_review(known.get(card["id"], {}), correct)
+            if correct:
+                correct_count += 1
+                st.success(f"{card['it']} â†’ **{card['de']}**")
+            else:
+                st.error(f"{card['it']} â†’ **{card['de']}** Â· scrivila una volta in una frase personale.")
+        _touch_study_day(state)
+        _save_state(state)
+        st.metric("Recupero corretto", f"{correct_count}/{len(selected)}")
+        st.caption("Accetta anche la forma senza articolo per non bloccare il flusso; quando puoi, ripeti sempre sostantivo + articolo + plurale.")
+
+
+def _writing_feedback(text: str, target: str) -> list[str]:
+    words = re.findall(r"[A-Za-zÃ„Ã–ÃœÃ¤Ã¶Ã¼ÃŸ]+", text)
+    sentences = [piece for piece in re.split(r"[.!?]+", text) if piece.strip()]
+    lower = text.lower()
+    connector_hits = sum(1 for terms in CONNECTORS.values() for term in terms if re.search(rf"\b{re.escape(term)}\b", lower))
+    feedback = [f"Lunghezza: **{len(words)} parole** Â· obiettivo {target}."]
+    if len(sentences) < 4:
+        feedback.append("Aggiungi paragrafi o frasi: una produzione B1/B2 deve sviluppare idee, non elencarle.")
+    else:
+        feedback.append(f"Struttura: **{len(sentences)} frasi** rilevate. Ora controlla che ogni paragrafo abbia una funzione precisa.")
+    if connector_hits < 3:
+        feedback.append("Coesione: usa almeno 3 connettori diversi (per esempio jedoch, deshalb, obwohl, einerseits).")
+    else:
+        feedback.append(f"Coesione: trovati **{connector_hits}** connettori. Verifica che esprimano davvero il rapporto logico giusto.")
+    if not re.search(r"\b(ich|meiner|meines|aus meiner sicht|meines erachtens)\b", lower):
+        feedback.append("Per una presa di posizione, rendi esplicita la tua voce: Meines Erachtens â€¦ / Aus meiner Sicht â€¦")
+    if not re.search(r"\b(weil|obwohl|dass|wenn)\b", lower):
+        feedback.append("Aggiungi almeno una subordinata con weil, obwohl, dass o wenn e ricontrolla il verbo finale.")
+    return feedback
+
+
+def _render_writing(st: Any, state: dict[str, Any]) -> None:
+    prompt = st.selectbox("Scegli un compito", WRITING_PROMPTS, format_func=lambda item: f"{item['level']} Â· {item['title']}", key="writing_prompt")
+    with st.container(border=True):
+        st.caption(f"Lunghezza consigliata: {prompt['words']}")
+        st.write(prompt["brief"])
+        st.info(prompt["useful"], icon=":material/lightbulb:")
+        st.markdown("**Pianifica prima di scrivere:** 1) scopo e destinatario; 2) posizione/richiesta; 3) due dettagli o ragioni; 4) obiezione o alternativa; 5) chiusura operativa.")
+    with st.form("writing_form"):
+        text = st.text_area("Il tuo testo in tedesco", height=300, placeholder="Scrivi qui una prima versione. Non puntare alla perfezione: punta a un messaggio chiaro e completo.")
+        self_check = st.checkbox("Ho riletto cercando: verbo finale nelle subordinate, maiuscole dei sostantivi, registro e richiesta/conclusione.")
+        submitted = st.form_submit_button("Analizza e salva la bozza", type="primary", icon=":material/edit_note:")
+    if submitted:
+        if not text.strip():
+            st.warning("Scrivi una bozza: il feedback diventa utile solo su una produzione reale.")
+            return
+        feedback = _writing_feedback(text, prompt["words"])
+        for item in feedback:
+            st.write("- " + item)
+        state["writing"].append({"date": date.today().isoformat(), "title": prompt["title"], "words": len(re.findall(r"[A-Za-zÃ„Ã–ÃœÃ¤Ã¶Ã¼ÃŸ]+", text)), "checked": self_check, "text": text})
+        _touch_study_day(state)
+        _save_state(state)
+        st.success("Bozza salvata nel portfolio locale. Torna dopo qualche ora e riscrivila: la revisione distanziata fa emergere errori che subito non vedi.", icon=":material/save:")
+
+
+def _render_speaking(st: Any, state: dict[str, Any]) -> None:
+    prompt = st.selectbox("Scegli una situazione", SPEAKING_PROMPTS, format_func=lambda item: f"{item['level']} Â· {item['title']}", key="speaking_prompt")
+    with st.container(border=True):
+        st.write(f"**Situazione:** {prompt['scenario']}")
+        st.write(f"**Obiettivo:** {prompt['goal']}")
+        st.info(prompt["moves"], icon=":material/record_voice_over:")
+        st.markdown("**Metodo:** prepara 30 secondi, parla per 90â€“120 secondi, riascoltati se puoi, poi ripeti una seconda volta scegliendo due miglioramenti concreti.")
+    with st.form("speaking_reflection"):
+        interaction = st.checkbox("Ho posto almeno una domanda e ho reagito a una risposta, non ho fatto un monologo.")
+        repair = st.checkbox("Quando mi mancava una parola, ho spiegato il concetto in un altro modo invece di fermarmi.")
+        structure = st.checkbox("Ho usato connettori e una conclusione/accordo chiaro.")
+        fluency = st.select_slider("Quanto sei riuscito/a a restare in tedesco?", options=["meno di 30 s", "30â€“60 s", "1â€“2 min", "oltre 2 min"], value="30â€“60 s")
+        note = st.text_input("Una frase da riusare", placeholder="Wenn ich Sie richtig verstehe, â€¦")
+        submitted = st.form_submit_button("Registra la pratica orale", type="primary", icon=":material/mic:")
+    if submitted:
+        state["speaking"].append({"date": date.today().isoformat(), "title": prompt["title"], "interaction": interaction, "repair": repair, "structure": structure, "fluency": fluency, "note": note.strip()})
+        _touch_study_day(state)
+        _save_state(state)
+        score = sum((interaction, repair, structure))
+        st.success(f"Pratica registrata: {score}/3 comportamenti comunicativi osservati.", icon=":material/mic:")
+        if score < 3:
+            st.info("Rifai lo stesso scenario: il secondo giro Ã¨ dove trasformi formule passive in riflessi.", icon=":material/replay:")
+
+
+def _render_reading(st: Any) -> None:
+    case = st.selectbox("Scegli il testo", READING_CASES, format_func=lambda item: f"{item['level']} Â· {item['title']}", key="reading_case")
+    st.caption("Primo passaggio: 90 secondi senza dizionario per tesi, scopo e struttura. Secondo passaggio: cerca le prove nel testo.")
+    with st.container(border=True):
+        st.write(case["text"])
+    with st.form("reading_form"):
+        answers = []
+        for index, (question, answer, wrong) in enumerate(case["questions"]):
+            answers.append(st.radio(question, [answer, *wrong], index=None, key=f"reading_{case['title']}_{index}"))
+        submitted = st.form_submit_button("Correggi la comprensione", type="primary", icon=":material/menu_book:")
+    if submitted:
+        score = sum(given == item[1] for given, item in zip(answers, case["questions"]))
+        st.metric("Comprensione", f"{score}/{len(case['questions'])}")
+        for given, item in zip(answers, case["questions"]):
+            if given != item[1]:
+                st.info(f"Rileggi la frase che prova questa risposta: **{item[1]}**.")
+
+
+def _render_production(st: Any, state: dict[str, Any]) -> None:
+    mode = st.segmented_control("Scegli l'abilitÃ  da allenare", ["Scrittura", "Parlato", "Lettura critica"], default="Scrittura", required=True, key="production_mode", width="stretch")
+    if mode == "Scrittura":
+        _render_writing(st, state)
+    elif mode == "Parlato":
+        _render_speaking(st, state)
+    else:
+        _render_reading(st)
+
+
+def _render_b2_mock(st: Any, state: dict[str, Any], question_bank: list[dict[str, Any]]) -> None:
+    st.subheader("Mini-simulazione B2")
+    st.write("Questa Ã¨ una simulazione didattica, non un esame ufficiale. Allena le quattro competenze valutate nel Goethe-Zertifikat B2: Lesen, HÃ¶ren, Schreiben e Sprechen.")
+    st.link_button("Vedi struttura e materiali ufficiali Goethe B2", "https://www.goethe.de/en/spr/prf/ueb/pb2.html", icon=":material/open_in_new:")
+    st.info("Per un B2 operativo non basta scegliere risposte corrette: devi comprendere testi complessi, parlare con scioltezza, sostenere una posizione e scrivere in un registro appropriato.", icon=":material/psychology:")
+    if "ddm_b2_mock" not in st.session_state:
+        st.session_state["ddm_b2_mock"] = _unique_questions(question_bank, "B2", 10, "b2-mini-mock")
+    questions = st.session_state["ddm_b2_mock"]
+    with st.expander("1. Lesen Â· 12 minuti", expanded=True):
+        st.write("Usa anche il testo B2 nella sezione 'Lettura critica'. Qui controlli lessico e grammatica in contesto.")
+        with st.form("b2_mock_form"):
+            answers: dict[str, str | None] = {}
+            for number, question in enumerate(questions, start=1):
+                prompt, options, _ = _question_parts(question)
+                st.markdown(f"**{number}. {prompt}**")
+                answers[question["id"]] = st.radio("Risposta", options, index=None, key=f"mock_{question['id']}", label_visibility="collapsed")
+            submitted = st.form_submit_button("Correggi parte di lettura", type="primary", icon=":material/fact_check:")
+        if submitted:
+            score = sum(answers[q["id"]] == _question_parts(q)[2] for q in questions)
+            state["exam_history"].append({"date": date.today().isoformat(), "reading_score": score, "total": len(questions)})
+            _touch_study_day(state)
+            _save_state(state)
+            st.metric("Parte oggettiva", f"{score}/{len(questions)}")
+            if score < 7:
+                st.warning("Rivedi gli errori per argomento e ripeti il ripasso attivo. Non usare il punteggio come etichetta del tuo livello.")
+            else:
+                st.success("Buona base oggettiva: ora verifica che scrittura e parlato siano altrettanto solidi.")
+    with st.expander("2. HÃ¶ren Â· allenamento concreto"):
+        st.write("Usa i testi e gli esempi audio del corso per ascoltare una sola volta senza leggere; poi annota tesi, due dettagli e atteggiamento del parlante. Infine confronta la trascrizione. Per materiale d'esame, usa i file ufficiali nel link sopra.")
+        st.markdown("**Griglia:** ho capito (a) tema e intenzione, (b) due dettagli verificabili, (c) accordo/disaccordo o tono?")
+    with st.expander("3. Schreiben Â· 35 minuti"):
+        st.write("Scegli una traccia B2 nel Laboratorio di produzione. Prima pianifica 5 minuti; poi produci un testo con scopo, struttura, lessico pertinente, coesione e registro. Rivedi separatamente contenuto e forma.")
+        st.markdown("**Autovalutazione B2:** posizione chiara Â· ragioni sviluppate Â· esempio pertinente Â· concessione/controargomento Â· richiesta o conclusione operativa Â· errori che non impediscono la comprensione.")
+    with st.expander("4. Sprechen Â· 15 minuti"):
+        st.write("Usa una situazione B2 nel Laboratorio. Prepara una presentazione breve, rispondi a un'obiezione e cerca un accordo. Se hai un partner, alternatevi nei ruoli; se sei solo, registra due versioni.")
+        st.markdown("**Autovalutazione B2:** parlo senza leggere Â· collego le idee Â· reagisco Â· chiarisco fraintendimenti Â· sintetizzo un accordo.")
+
+
+def _render_settings(st: Any, state: dict[str, Any]) -> None:
+    st.subheader("Obiettivo e dati")
+    with st.form("goal_form"):
+        goal = st.selectbox("Obiettivo", ["B2 pratico", "Vivere in Germania", "Lavorare in tedesco", "Preparare Goethe B2"], index=["B2 pratico", "Vivere in Germania", "Lavorare in tedesco", "Preparare Goethe B2"].index(state["profile"].get("goal", "B2 pratico")))
+        minutes = st.slider("Minuti realistici al giorno", 15, 90, int(state["profile"].get("minutes_per_day", 35)), step=5)
+        submitted = st.form_submit_button("Salva obiettivo", type="primary", icon=":material/save:")
+    if submitted:
+        state["profile"].update({"goal": goal, "minutes_per_day": minutes})
+        _save_state(state)
+        st.success("Obiettivo salvato localmente.", icon=":material/save:")
+    export = json.dumps(state, ensure_ascii=False, indent=2)
+    st.download_button("Esporta i tuoi progressi", export, file_name="der_deutsche_meister_progressi.json", mime="application/json", icon=":material/download:")
+    st.caption("I dati restano nel file locale learner_progress.json accanto all'app; non vengono inviati a servizi esterni.")
+
+
+def render_fluency_lab(st: Any, question_bank: list[dict[str, Any]], vocab_by_level: dict[str, list[dict[str, str]]]) -> None:
+    """Entry point chiamato da app.py; lo stato Ã¨ per utente e viene anche salvato localmente."""
+    state = _load_state(st)
+    st.title("Laboratorio di padronanza")
+    st.caption("Un percorso per passare dal 'riconoscere una regola' al capire, rispondere, scrivere, negoziare e autocorreggersi in tedesco.")
+    _render_overview(st, state)
+    page = st.segmented_control(
+        "Area del laboratorio",
+        ["Oggi", "Diagnostica", "Percorso", "Ripasso", "Produzione", "Simulazione B2", "Obiettivo"],
+        default="Oggi",
+        required=True,
+        key="fluency_lab_page",
+        width="stretch",
+        persist_state="session",
+    )
+    if page == "Oggi":
+        return
+    if page == "Diagnostica":
+        _render_placement(st, state, question_bank)
+    elif page == "Percorso":
+        _render_path(st, state)
+    elif page == "Ripasso":
+        _render_review(st, state, vocab_by_level)
+    elif page == "Produzione":
+        _render_production(st, state)
+    elif page == "Simulazione B2":
+        _render_b2_mock(st, state, question_bank)
+    else:
+        _render_settings(st, state)
 
 
 
