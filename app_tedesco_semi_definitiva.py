@@ -100,8 +100,48 @@ st.markdown(
 
 # ---------------------------------------------------------------------------
 # Accesso: l'app resta bloccata finché non si inserisce la password corretta.
+# La lingua è selezionabile già da questa schermata (l'inglese è il default,
+# perché non è detto che chi apre l'app sappia l'italiano); la scelta resta
+# poi memorizzata anche nelle schermate successive, tramite session_state.
 # ---------------------------------------------------------------------------
 APP_PASSWORD = st.secrets.get("APP_PASSWORD", os.environ.get("APP_PASSWORD", "lala31"))
+
+LANGUAGES = {"English": "en", "Italiano": "it", "Türkçe": "tr", "Español": "es"}
+
+LOGIN_TEXT = {
+    "en": {
+        "subtitle": "Restricted access · enter the password to continue",
+        "note": "🔒 This application is protected: enter the password to unlock it.",
+        "password": "Password",
+        "button": "🔓 Unlock",
+        "error": "Incorrect password. Try again.",
+        "language": "Language",
+    },
+    "it": {
+        "subtitle": "Accesso riservato · inserisci la password per continuare",
+        "note": "🔒 Questa applicazione è protetta: inserisci la password per sbloccarla.",
+        "password": "Password",
+        "button": "🔓 Sblocca",
+        "error": "Password errata. Riprova.",
+        "language": "Lingua",
+    },
+    "es": {
+        "subtitle": "Acceso restringido · introduce la contraseña para continuar",
+        "note": "🔒 Esta aplicación está protegida: introduce la contraseña para desbloquearla.",
+        "password": "Contraseña",
+        "button": "🔓 Desbloquear",
+        "error": "Contraseña incorrecta. Inténtalo de nuevo.",
+        "language": "Idioma",
+    },
+    "tr": {
+        "subtitle": "Kısıtlı erişim · devam etmek için şifreyi girin",
+        "note": "🔒 Bu uygulama korumalıdır: kilidini açmak için şifreyi girin.",
+        "password": "Şifre",
+        "button": "🔓 Kilidi Aç",
+        "error": "Yanlış şifre. Tekrar deneyin.",
+        "language": "Dil",
+    },
+}
 
 
 def _rerun() -> None:
@@ -113,12 +153,18 @@ def _rerun() -> None:
 
 
 def require_login() -> None:
-    """Mostra una schermata di accesso e ferma l'esecuzione finché la password non è corretta."""
+    """Mostra una schermata di accesso (con selettore lingua) e ferma l'esecuzione finché
+    la password non è corretta. La lingua scelta qui resta in session_state ed è quindi
+    già impostata per il resto dell'app dopo lo sblocco."""
     if st.session_state.get("authenticated"):
         return
+    if "interface_language_choice" not in st.session_state:
+        st.session_state["interface_language_choice"] = "English"
+    login_lang = LANGUAGES[st.session_state["interface_language_choice"]]
+    lt = LOGIN_TEXT[login_lang]
     st.markdown(
         "<section class='hero'><h1>🇩🇪 Der Deutsche Meister</h1>"
-        "<p>Accesso riservato · inserisci la password per continuare</p></section>",
+        f"<p>{html.escape(lt['subtitle'])}</p></section>",
         unsafe_allow_html=True,
     )
     st.markdown(
@@ -131,19 +177,24 @@ def require_login() -> None:
         """,
         unsafe_allow_html=True,
     )
+    st.selectbox(
+        "🌐 " + lt["language"],
+        list(LANGUAGES.keys()),
+        key="interface_language_choice",
+    )
     st.markdown(
-        f"<div class='note'>🔒 Questa applicazione è protetta: inserisci la password per sbloccarla.</div>",
+        f"<div class='note'>{html.escape(lt['note'])}</div>",
         unsafe_allow_html=True,
     )
     with st.form("login_form"):
-        password = st.text_input("Password", type="password", label_visibility="visible")
-        submitted = st.form_submit_button("🔓 Sblocca", type="primary", use_container_width=True)
+        password = st.text_input(lt["password"], type="password", label_visibility="visible")
+        submitted = st.form_submit_button(lt["button"], type="primary", use_container_width=True)
     if submitted:
         if password == APP_PASSWORD:
             st.session_state["authenticated"] = True
             _rerun()
         else:
-            st.error("Password errata. Riprova.")
+            st.error(lt["error"])
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
@@ -154,7 +205,6 @@ require_login()
 # ---------------------------------------------------------------------------
 # Interfaccia localizzata. Il tedesco rimane sempre la lingua-obiettivo.
 # ---------------------------------------------------------------------------
-LANGUAGES = {"Italiano": "it", "Türkçe": "tr", "English": "en", "Español": "es"}
 UI = {
     "it": {
         "tagline": "Percorso formativo di tedesco, cultura e tedesco professionale",
@@ -281,6 +331,63 @@ PLURAL_FORMS = {
     "der Hals": "die Hälse", "die Schulter": "die Schultern", "der Rücken": "die Rücken", "der Arm": "die Arme",
     "die Hand": "die Hände", "der Bauch": "die Bäuche", "das Bein": "die Beine", "der Fuß": "die Füße",
     "der Schmerz": "die Schmerzen", "das Fieber": "—", "die Untersuchung": "die Untersuchungen", "das Rezept": "die Rezepte",
+    # Enciclopedia disciplinare — settori ampliati e nuovi
+    "der Auspuff": "die Auspuffe", "die Lichtmaschine": "die Lichtmaschinen", "der Keilriemen": "die Keilriemen",
+    "die Achse": "die Achsen", "der Stoßdämpfer": "die Stoßdämpfer", "die Werkstatt": "die Werkstätten",
+    "der Schraubenschlüssel": "die Schraubenschlüssel", "die Zange": "die Zangen", "der Schraubenzieher": "die Schraubenzieher",
+    "der Hammer": "die Hämmer", "die Schutzbrille": "die Schutzbrillen", "der Helm": "die Helme",
+    "die Hydraulik": "—", "der Kolben": "die Kolben", "die Karosserie": "die Karosserien",
+    "das Ersatzteil": "die Ersatzteile", "der Router": "die Router", "das WLAN": "—",
+    "die Cloud": "—", "die App": "die Apps", "der Browser": "die Browser",
+    "die Suchmaschine": "die Suchmaschinen", "der Server": "die Server", "die Software": "—",
+    "die Hardware": "—", "der Virus": "die Viren", "die Firewall": "die Firewalls",
+    "der USB-Stick": "die USB-Sticks", "der Drucker": "die Drucker", "die E-Mail": "die E-Mails",
+    "der Anhang": "die Anhänge", "der Absturz": "die Abstürze", "der Kontinent": "die Kontinente",
+    "der Ozean": "die Ozeane", "die Insel": "die Inseln", "die Wüste": "die Wüsten",
+    "der Wald": "die Wälder", "die Region": "die Regionen", "der Bezirk": "die Bezirke",
+    "die Gemeinde": "die Gemeinden", "der Bürgermeister": "die Bürgermeister", "die Regierung": "die Regierungen",
+    "das Parlament": "die Parlamente", "das Gesetz": "die Gesetze", "der Bürger": "die Bürger",
+    "die Staatsangehörigkeit": "die Staatsangehörigkeiten", "die Kultur": "die Kulturen", "die Religion": "die Religionen",
+    "die Gesellschaft": "die Gesellschaften", "der Frieden": "—", "die Wirtschaft": "die Wirtschaften",
+    "der Kreis": "die Kreise", "das Dreieck": "die Dreiecke", "das Quadrat": "die Quadrate",
+    "der Winkel": "die Winkel", "der Durchmesser": "die Durchmesser", "der Radius": "die Radien",
+    "der Umfang": "die Umfänge", "das Volumen": "die Volumina", "die Formel": "die Formeln",
+    "der Durchschnitt": "die Durchschnitte", "die Statistik": "die Statistiken", "die Wahrscheinlichkeit": "die Wahrscheinlichkeiten",
+    "das Experiment": "die Experimente", "die Energie": "die Energien", "die Kraft": "die Kräfte",
+    "die Masse": "die Massen", "die Chemie": "—", "die Physik": "—",
+    "die Nase": "die Nasen", "der Mund": "die Münder", "der Zahn": "die Zähne",
+    "das Herz": "die Herzen", "die Lunge": "die Lungen", "der Magen": "die Mägen",
+    "die Haut": "die Häute", "das Knie": "die Knie", "der Husten": "—",
+    "die Erkältung": "die Erkältungen", "die Allergie": "die Allergien", "die Verletzung": "die Verletzungen",
+    "die Impfung": "die Impfungen", "das Medikament": "die Medikamente", "die Tablette": "die Tabletten",
+    "die Versicherung": "die Versicherungen", "das Wohnzimmer": "die Wohnzimmer", "das Schlafzimmer": "die Schlafzimmer",
+    "das Badezimmer": "die Badezimmer", "der Flur": "die Flure", "der Balkon": "die Balkone",
+    "der Keller": "die Keller", "die Tür": "die Türen", "das Fenster": "die Fenster",
+    "das Bett": "die Betten", "der Schrank": "die Schränke", "das Sofa": "die Sofas",
+    "die Lampe": "die Lampen", "der Kühlschrank": "die Kühlschränke", "die Waschmaschine": "die Waschmaschinen",
+    "der Müll": "—", "die Miete": "die Mieten", "der Vermieter": "die Vermieter",
+    "das Frühstück": "die Frühstücke", "das Mittagessen": "die Mittagessen", "das Abendessen": "die Abendessen",
+    "die Butter": "—", "der Käse": "—", "die Milch": "—",
+    "das Ei": "die Eier", "das Gemüse": "—", "das Obst": "—",
+    "das Fleisch": "—", "der Fisch": "die Fische", "der Reis": "—",
+    "die Suppe": "die Suppen", "der Zucker": "—", "das Salz": "—",
+    "der Pfeffer": "—", "das Öl": "die Öle", "der Topf": "die Töpfe",
+    "die Pfanne": "die Pfannen", "das Messer": "die Messer", "die Gabel": "die Gabeln",
+    "der Löffel": "die Löffel", "der Teller": "die Teller", "das Glas": "die Gläser",
+    "der Geschmack": "die Geschmäcker", "der Bus": "die Busse", "die Bahn": "die Bahnen",
+    "die U-Bahn": "die U-Bahnen", "die Straßenbahn": "die Straßenbahnen", "das Fahrrad": "die Fahrräder",
+    "die Haltestelle": "die Haltestellen", "das Gleis": "die Gleise", "der Fahrplan": "die Fahrpläne",
+    "der Fahrschein": "die Fahrscheine", "die Verspätung": "die Verspätungen", "der Führerschein": "die Führerscheine",
+    "die Ampel": "die Ampeln", "die Kreuzung": "die Kreuzungen", "der Parkplatz": "die Parkplätze",
+    "der Stau": "die Staus", "die Autobahn": "die Autobahnen", "der Flughafen": "die Flughäfen",
+    "das Flugzeug": "die Flugzeuge", "das Ticket": "die Tickets", "der Koffer": "die Koffer",
+    "der Arbeitgeber": "die Arbeitgeber", "der Arbeitnehmer": "die Arbeitnehmer", "der Chef": "die Chefs",
+    "das Büro": "die Büros", "der Vertrag": "die Verträge", "das Gehalt": "die Gehälter",
+    "die Kündigung": "die Kündigungen", "der Urlaub": "die Urlaube", "die Überstunde": "die Überstunden",
+    "das Amt": "die Ämter", "das Finanzamt": "die Finanzämter", "die Anmeldung": "die Anmeldungen",
+    "der Antrag": "die Anträge", "das Formular": "die Formulare", "die Unterschrift": "die Unterschriften",
+    "der Ausweis": "die Ausweise", "der Reisepass": "die Reisepässe", "die Steuer": "die Steuern",
+    "die Frist": "die Fristen", "die Rente": "die Renten", "die Behörde": "die Behörden",
 }
 
 
@@ -2957,7 +3064,7 @@ with top_info:
     st.caption("Der Deutsche Meister · Deutsch lernen A1–B2")
 with language_column:
     if "interface_language_choice" not in st.session_state:
-        st.session_state["interface_language_choice"] = "Italiano"
+        st.session_state["interface_language_choice"] = "English"
     language_label = st.selectbox(
         "🌐 " + UI[LANGUAGES[st.session_state["interface_language_choice"]]]["language"],
         list(LANGUAGES.keys()),
