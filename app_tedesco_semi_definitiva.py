@@ -634,13 +634,14 @@ def _render_international_lab(st: Any, state: dict[str, Any], question_bank: lis
         if f"international_placement_{language}" not in st.session_state:
             selected: list[dict[str, Any]] = []
             for level in LEVELS:
-                selected.extend(_unique_questions(question_bank, level, 4, f"international-{language}-{level}"))
+                selected.extend(_unique_questions(question_bank, level, 4, f"{_session_shuffle_seed()}-international-{language}-{level}"))
             st.session_state[f"international_placement_{language}"] = selected
         questions = st.session_state[f"international_placement_{language}"]
         with st.form(f"international_placement_form_{language}"):
             answers: dict[str, str | None] = {}
             for number, question in enumerate(questions, start=1):
                 prompt, options, _ = _international_question_parts(question, language)
+                options = _shuffled_options(options, "intl-placement", language, question["id"])
                 st.markdown(f"**{number}. [{question['level']}] {prompt}**")
                 answers[question["id"]] = st.radio(text["choose"], options, index=None, key=f"international_answer_{language}_{question['id']}", label_visibility="collapsed")
             submitted = st.form_submit_button(text["grade"], type="primary", icon=":material/assessment:")
@@ -717,11 +718,12 @@ def _render_international_lab(st: Any, state: dict[str, Any], question_bank: lis
     st.subheader(text["mock"])
     st.write(text["mock_intro"])
     st.link_button(text["official"], "https://www.goethe.de/en/spr/prf/ueb/pb2.html", icon=":material/open_in_new:")
-    questions = _unique_questions(question_bank, "B2", 10, f"international-mock-{language}")
+    questions = _unique_questions(question_bank, "B2", 10, f"{_session_shuffle_seed()}-international-mock-{language}")
     with st.form(f"international_mock_{language}"):
         answers: dict[str, str | None] = {}
         for number, question in enumerate(questions, start=1):
             prompt, options, _ = _international_question_parts(question, language)
+            options = _shuffled_options(options, "intl-mock", language, question["id"])
             st.markdown(f"**{number}. {prompt}**")
             answers[question["id"]] = st.radio(text["choose"], options, index=None, key=f"international_mock_answer_{language}_{question['id']}", label_visibility="collapsed")
         submitted = st.form_submit_button(text["check_mock"], type="primary", icon=":material/fact_check:")
@@ -801,6 +803,33 @@ def _unique_questions(question_bank: list[dict[str, Any]], level: str, amount: i
     groups = list(grouped)
     chooser.shuffle(groups)
     return [chooser.choice(grouped[group]) for group in groups[:amount]]
+
+
+def _session_shuffle_seed() -> int:
+    """Seme casuale univoco per la sessione dell'utente corrente: viene generato
+    una sola volta e conservato in session_state. Serve a far sì che l'ordine
+    delle risposte (e, dove serve, la scelta delle domande) cambi da una
+    sessione di prova all'altra, restando però stabile finché la sessione resta
+    aperta — così le opzioni non "saltano" a ogni rerun mentre si compila lo
+    stesso test."""
+    if "ddm_shuffle_seed" not in st.session_state:
+        st.session_state["ddm_shuffle_seed"] = random.randint(0, 2_147_483_647)
+    return st.session_state["ddm_shuffle_seed"]
+
+
+def _shuffled_options(options: list[Any], *key_parts: Any) -> list[Any]:
+    """Restituisce una COPIA mescolata di ``options``: non modifica mai la lista
+    originale (condivisa fra tutte le sessioni tramite QUESTION_BANK — mescolarla
+    sul posto la altererebbe per tutti gli utenti contemporaneamente). La
+    posizione di ogni opzione dipende dalla sessione corrente e da key_parts (di
+    norma l'id della domanda più un'etichetta del contesto, es. "placement" o
+    "b2mock"), così la risposta corretta non cade mai sistematicamente nello
+    stesso posto e due prove diverse con la stessa domanda non condividono lo
+    stesso schema di mescolamento."""
+    seed = ":".join(str(part) for part in (_session_shuffle_seed(), *key_parts))
+    shuffled = list(options)
+    random.Random(seed).shuffle(shuffled)
+    return shuffled
 
 
 def _all_cards(vocab_by_level: dict[str, list[dict[str, str]]]) -> list[dict[str, str]]:
@@ -895,13 +924,14 @@ def _render_placement(st: Any, state: dict[str, Any], question_bank: list[dict[s
     if "ddm_placement_questions" not in st.session_state:
         questions: list[dict[str, Any]] = []
         for level in LEVELS:
-            questions.extend(_unique_questions(question_bank, level, 4, f"placement-{level}"))
+            questions.extend(_unique_questions(question_bank, level, 4, f"{_session_shuffle_seed()}-placement-{level}"))
         st.session_state["ddm_placement_questions"] = questions
     questions = st.session_state["ddm_placement_questions"]
     with st.form("placement_form"):
         answers = {}
         for number, question in enumerate(questions, start=1):
             prompt, options, _ = _question_parts(question)
+            options = _shuffled_options(options, "placement", question["id"])
             st.markdown(f"**{number}. [{question['level']}] {prompt}**")
             answers[question["id"]] = st.radio("Scegli una risposta", options, index=None, key=f"placement_answer_{question['id']}", label_visibility="collapsed")
         submitted = st.form_submit_button("Valuta la diagnostica", type="primary", icon=":material/assessment:")
@@ -1060,7 +1090,8 @@ def _render_reading(st: Any) -> None:
     with st.form("reading_form"):
         answers = []
         for index, (question, answer, wrong) in enumerate(case["questions"]):
-            answers.append(st.radio(question, [answer, *wrong], index=None, key=f"reading_{case['title']}_{index}"))
+            options = _shuffled_options([answer, *wrong], "reading", case["title"], index)
+            answers.append(st.radio(question, options, index=None, key=f"reading_{case['title']}_{index}"))
         submitted = st.form_submit_button("Correggi la comprensione", type="primary", icon=":material/menu_book:")
     if submitted:
         score = sum(given == item[1] for given, item in zip(answers, case["questions"]))
@@ -1086,7 +1117,7 @@ def _render_b2_mock(st: Any, state: dict[str, Any], question_bank: list[dict[str
     st.link_button("Vedi struttura e materiali ufficiali Goethe B2", "https://www.goethe.de/en/spr/prf/ueb/pb2.html", icon=":material/open_in_new:")
     st.info("Per un B2 operativo non basta scegliere risposte corrette: devi comprendere testi complessi, parlare con scioltezza, sostenere una posizione e scrivere in un registro appropriato.", icon=":material/psychology:")
     if "ddm_b2_mock" not in st.session_state:
-        st.session_state["ddm_b2_mock"] = _unique_questions(question_bank, "B2", 10, "b2-mini-mock")
+        st.session_state["ddm_b2_mock"] = _unique_questions(question_bank, "B2", 10, f"{_session_shuffle_seed()}-b2-mini-mock")
     questions = st.session_state["ddm_b2_mock"]
     with st.expander("1. Lesen · 12 minuti", expanded=True):
         st.write("Usa anche il testo B2 nella sezione 'Lettura critica'. Qui controlli lessico e grammatica in contesto.")
@@ -1094,6 +1125,7 @@ def _render_b2_mock(st: Any, state: dict[str, Any], question_bank: list[dict[str
             answers: dict[str, str | None] = {}
             for number, question in enumerate(questions, start=1):
                 prompt, options, _ = _question_parts(question)
+                options = _shuffled_options(options, "b2mock", question["id"])
                 st.markdown(f"**{number}. {prompt}**")
                 answers[question["id"]] = st.radio("Risposta", options, index=None, key=f"mock_{question['id']}", label_visibility="collapsed")
             submitted = st.form_submit_button("Correggi parte di lettura", type="primary", icon=":material/fact_check:")
@@ -3581,8 +3613,7 @@ def render_test(scope: str, pool: list[dict], language: str, title: str) -> None
     answers: dict[str, str | None] = {}
     for number, q in enumerate(questions, start=1):
         prompt, choices, correct = display_question(q, language)
-        order = list(choices)
-        random.Random(f"{token}:{q['id']}").shuffle(order)
+        order = _shuffled_options(choices, scope, token, q["id"])
         st.markdown(f"**{number}. [{q['level']}] {prompt}**")
         if q["type"] != "meaning":
             st.caption(f"{tx('available')}: " + " · ".join(order))
